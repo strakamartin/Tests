@@ -27,59 +27,75 @@ bool DBManager::openDatabase(const QString &path, QString *err)
 bool DBManager::ensureSchema(QString *err)
 {
     QSqlQuery q(m_db);
-    // questions table
+    // tests table
     if (!q.exec(
-        "CREATE TABLE IF NOT EXISTS questions ("
-        "id TEXT PRIMARY KEY,"
-        "text TEXT NOT NULL,"
-        "type INTEGER NOT NULL,"
-        "expected_text TEXT"
-        ")"
-    )) {
+            "CREATE TABLE IF NOT EXISTS tests ("
+            "id TEXT PRIMARY KEY,"
+            "name TEXT NOT NULL,"
+            "description TEXT"
+            ")"
+            )) {
+        if (err) *err = q.lastError().text();
+        return false;
+    }
+
+    // questions table (now includes test_id)
+    if (!q.exec(
+            "CREATE TABLE IF NOT EXISTS questions ("
+            "id TEXT PRIMARY KEY,"
+            "test_id TEXT,"
+            "text TEXT NOT NULL,"
+            "type INTEGER NOT NULL,"
+            "expected_text TEXT,"
+            "FOREIGN KEY(test_id) REFERENCES tests(id) ON DELETE CASCADE"
+            ")"
+            )) {
         if (err) *err = q.lastError().text();
         return false;
     }
 
     // options table
     if (!q.exec(
-        "CREATE TABLE IF NOT EXISTS options ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "question_id TEXT NOT NULL,"
-        "text TEXT NOT NULL,"
-        "correct INTEGER NOT NULL,"
-        "ord INTEGER NOT NULL,"
-        "FOREIGN KEY(question_id) REFERENCES questions(id) ON DELETE CASCADE"
-        ")"
-    )) {
+            "CREATE TABLE IF NOT EXISTS options ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "question_id TEXT NOT NULL,"
+            "text TEXT NOT NULL,"
+            "correct INTEGER NOT NULL,"
+            "ord INTEGER NOT NULL,"
+            "FOREIGN KEY(question_id) REFERENCES questions(id) ON DELETE CASCADE"
+            ")"
+            )) {
         if (err) *err = q.lastError().text();
         return false;
     }
 
     // results table
     if (!q.exec(
-        "CREATE TABLE IF NOT EXISTS results ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "student_email TEXT,"
-        "score REAL,"
-        "total INTEGER,"
-        "timestamp TEXT"
-        ")"
-    )) {
+            "CREATE TABLE IF NOT EXISTS results ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "student_email TEXT,"
+            "test_id TEXT,"
+            "score REAL,"
+            "total INTEGER,"
+            "timestamp TEXT,"
+            "FOREIGN KEY(test_id) REFERENCES tests(id) ON DELETE SET NULL"
+            ")"
+            )) {
         if (err) *err = q.lastError().text();
         return false;
     }
 
     // result details table
     if (!q.exec(
-        "CREATE TABLE IF NOT EXISTS result_details ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "result_id INTEGER NOT NULL,"
-        "question_id TEXT,"
-        "correct INTEGER,"
-        "user_answer TEXT,"
-        "FOREIGN KEY(result_id) REFERENCES results(id) ON DELETE CASCADE"
-        ")"
-    )) {
+            "CREATE TABLE IF NOT EXISTS result_details ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "result_id INTEGER NOT NULL,"
+            "question_id TEXT,"
+            "correct INTEGER,"
+            "user_answer TEXT,"
+            "FOREIGN KEY(result_id) REFERENCES results(id) ON DELETE CASCADE"
+            ")"
+            )) {
         if (err) *err = q.lastError().text();
         return false;
     }
@@ -87,20 +103,147 @@ bool DBManager::ensureSchema(QString *err)
     return true;
 }
 
+bool DBManager::loadTests(QVector<Test> &outTests, QString *err)
+{
+    outTests.clear();
+    QSqlQuery q(m_db);
+    if (!q.exec("SELECT id, name, description FROM tests ORDER BY rowid")) {
+        if (err) *err = q.lastError().text();
+        return false;
+    }
+    while (q.next()) {
+        Test t;
+        t.id = q.value(0).toString();
+        t.name = q.value(1).toString();
+        t.description = q.value(2).toString();
+        outTests.append(t);
+    }
+    return true;
+}
+
+bool DBManager::addOrUpdateTest(const Test &t, QString *err)
+{
+    if (!m_db.transaction()) {
+        if (err) *err = m_db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery q(m_db);
+    q.prepare("SELECT COUNT(1) FROM tests WHERE id = :id");
+    q.bindValue(":id", t.id);
+    if (!q.exec()) {
+        if (err) *err = q.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+    bool exists = false;
+    if (q.next()) exists = (q.value(0).toInt() > 0);
+
+    if (!exists) {
+        QSqlQuery ins(m_db);
+        ins.prepare("INSERT INTO tests (id, name, description) VALUES (:id, :name, :desc)");
+        ins.bindValue(":id", t.id);
+        ins.bindValue(":name", t.name);
+        ins.bindValue(":desc", t.description);
+        if (!ins.exec()) {
+            if (err) *err = ins.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    } else {
+        QSqlQuery upd(m_db);
+        upd.prepare("UPDATE tests SET name=:name, description=:desc WHERE id=:id");
+        upd.bindValue(":name", t.name);
+        upd.bindValue(":desc", t.description);
+        upd.bindValue(":id", t.id);
+        if (!upd.exec()) {
+            if (err) *err = upd.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    if (!m_db.commit()) {
+        if (err) *err = m_db.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+    return true;
+}
+
+bool DBManager::removeTest(const QString &testId, QString *err)
+{
+    if (!m_db.transaction()) {
+        if (err) *err = m_db.lastError().text();
+        return false;
+    }
+    QSqlQuery q(m_db);
+    q.prepare("DELETE FROM tests WHERE id = :id");
+    q.bindValue(":id", testId);
+    if (!q.exec()) {
+        if (err) *err = q.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+    if (!m_db.commit()) {
+        if (err) *err = q.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+    return true;
+}
+
 bool DBManager::loadAllQuestions(QVector<Question> &outQuestions, QString *err)
 {
     outQuestions.clear();
     QSqlQuery q(m_db);
-    if (!q.exec("SELECT id, text, type, expected_text FROM questions ORDER BY rowid")) {
+    if (!q.exec("SELECT id, test_id, text, type, expected_text FROM questions ORDER BY rowid")) {
         if (err) *err = q.lastError().text();
         return false;
     }
     while (q.next()) {
         Question qq;
         qq.id = q.value(0).toString();
-        qq.text = q.value(1).toString();
-        qq.type = static_cast<QuestionType>(q.value(2).toInt());
-        qq.expectedText = q.value(3).toString();
+        qq.testId = q.value(1).toString();
+        qq.text = q.value(2).toString();
+        qq.type = static_cast<QuestionType>(q.value(3).toInt());
+        qq.expectedText = q.value(4).toString();
+        // load options
+        QSqlQuery q2(m_db);
+        q2.prepare("SELECT text, correct FROM options WHERE question_id = :qid ORDER BY ord");
+        q2.bindValue(":qid", qq.id);
+        if (!q2.exec()) {
+            if (err) *err = q2.lastError().text();
+            return false;
+        }
+        while (q2.next()) {
+            Answer a;
+            a.text = q2.value(0).toString();
+            a.correct = q2.value(1).toInt() != 0;
+            qq.options.append(a);
+        }
+        outQuestions.append(qq);
+    }
+    return true;
+}
+
+bool DBManager::loadQuestionsForTest(const QString &testId, QVector<Question> &outQuestions, QString *err)
+{
+    outQuestions.clear();
+    QSqlQuery q(m_db);
+    q.prepare("SELECT id, test_id, text, type, expected_text FROM questions WHERE test_id = :tid ORDER BY rowid");
+    q.bindValue(":tid", testId);
+    if (!q.exec()) {
+        if (err) *err = q.lastError().text();
+        return false;
+    }
+    while (q.next()) {
+        Question qq;
+        qq.id = q.value(0).toString();
+        qq.testId = q.value(1).toString();
+        qq.text = q.value(2).toString();
+        qq.type = static_cast<QuestionType>(q.value(3).toInt());
+        qq.expectedText = q.value(4).toString();
         // load options
         QSqlQuery q2(m_db);
         q2.prepare("SELECT text, correct FROM options WHERE question_id = :qid ORDER BY ord");
@@ -142,8 +285,9 @@ bool DBManager::addOrUpdateQuestion(const Question &qobj, QString *err)
 
     if (!exists) {
         QSqlQuery ins(m_db);
-        ins.prepare("INSERT INTO questions (id, text, type, expected_text) VALUES (:id, :text, :type, :expected)");
+        ins.prepare("INSERT INTO questions (id, test_id, text, type, expected_text) VALUES (:id, :test_id, :text, :type, :expected)");
         ins.bindValue(":id", qobj.id);
+        ins.bindValue(":test_id", qobj.testId);
         ins.bindValue(":text", qobj.text);
         ins.bindValue(":type", static_cast<int>(qobj.type));
         ins.bindValue(":expected", qobj.expectedText);
@@ -154,7 +298,8 @@ bool DBManager::addOrUpdateQuestion(const Question &qobj, QString *err)
         }
     } else {
         QSqlQuery upd(m_db);
-        upd.prepare("UPDATE questions SET text=:text, type=:type, expected_text=:expected WHERE id=:id");
+        upd.prepare("UPDATE questions SET test_id=:test_id, text=:text, type=:type, expected_text=:expected WHERE id=:id");
+        upd.bindValue(":test_id", qobj.testId);
         upd.bindValue(":text", qobj.text);
         upd.bindValue(":type", static_cast<int>(qobj.type));
         upd.bindValue(":expected", qobj.expectedText);
@@ -221,7 +366,7 @@ bool DBManager::removeQuestion(const QString &questionId, QString *err)
     return true;
 }
 
-bool DBManager::saveResult(const QString &studentEmail, double score, int total,
+bool DBManager::saveResult(const QString &studentEmail, const QString &testId, double score, int total,
                            const QVector<ResultDetail> &details, QString *err)
 {
     if (!m_db.transaction()) {
@@ -229,8 +374,9 @@ bool DBManager::saveResult(const QString &studentEmail, double score, int total,
         return false;
     }
     QSqlQuery q(m_db);
-    q.prepare("INSERT INTO results (student_email, score, total, timestamp) VALUES (:email, :score, :total, :ts)");
+    q.prepare("INSERT INTO results (student_email, test_id, score, total, timestamp) VALUES (:email, :test_id, :score, :total, :ts)");
     q.bindValue(":email", studentEmail);
+    q.bindValue(":test_id", testId);
     q.bindValue(":score", score);
     q.bindValue(":total", total);
     q.bindValue(":ts", QDateTime::currentDateTimeUtc().toString(Qt::ISODate));

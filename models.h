@@ -4,6 +4,13 @@
 #include <QString>
 #include <QVector>
 
+// Test model (sada otázek)
+struct Test {
+    QString id;
+    QString name;
+    QString description;
+};
+
 // Question types
 enum class QuestionType {
     SingleChoice = 0,
@@ -20,6 +27,7 @@ struct Answer {
 // Question model
 struct Question {
     QString id; // unique id (QString, e.g. UUID)
+    QString testId; // which test this question belongs to
     QString text;
     QuestionType type = QuestionType::SingleChoice;
     QVector<Answer> options; // for choice questions

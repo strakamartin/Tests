@@ -23,6 +23,7 @@ add_executable(QtTestMaker
     dbmanager.h
     models.h
     testrunner.h
+    README.md
 )
 
 target_link_libraries(QtTestMaker PRIVATE

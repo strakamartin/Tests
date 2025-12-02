@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     buildUi();
-    // Load questions from current DB (if any)
+    // Load tests and questions from DB (if any)
     onLoadFromDB();
 }
 
@@ -33,18 +33,38 @@ void MainWindow::buildUi()
     QWidget *central = new QWidget;
     setCentralWidget(central);
 
-    m_listQuestions = new QListWidget;
-    m_btnAddQuestion = new QPushButton("Přidat otázku");
-    m_btnRemoveQuestion = new QPushButton("Odstranit");
-    m_btnLoadDB = new QPushButton("Načíst z DB");
-    m_btnSaveDB = new QPushButton("Uložit do DB");
+    // Top of left: test selector and actions
+    m_comboTests = new QComboBox;
+    m_btnAddTest = new QPushButton("Přidat test");
+    m_btnRemoveTest = new QPushButton("Odstranit test");
+    m_editTestName = new QLineEdit;
+    m_editTestName->setPlaceholderText("Název testu");
+    m_editTestDescription = new QLineEdit;
+    m_editTestDescription->setPlaceholderText("Popis testu");
+
+    QHBoxLayout *testTop = new QHBoxLayout;
+    testTop->addWidget(new QLabel("Vyber test:"));
+    testTop->addWidget(m_comboTests);
+    testTop->addWidget(m_btnAddTest);
+    testTop->addWidget(m_btnRemoveTest);
 
     QVBoxLayout *leftLayout = new QVBoxLayout;
+    leftLayout->addLayout(testTop);
+    leftLayout->addWidget(m_editTestName);
+    leftLayout->addWidget(m_editTestDescription);
+
+    m_listQuestions = new QListWidget;
     leftLayout->addWidget(m_listQuestions);
+
     QHBoxLayout *leftButtons = new QHBoxLayout;
+    m_btnAddQuestion = new QPushButton("Přidat otázku");
+    m_btnRemoveQuestion = new QPushButton("Odstranit");
     leftButtons->addWidget(m_btnAddQuestion);
     leftButtons->addWidget(m_btnRemoveQuestion);
     leftLayout->addLayout(leftButtons);
+
+    m_btnLoadDB = new QPushButton("Načíst z DB");
+    m_btnSaveDB = new QPushButton("Uložit do DB");
     leftLayout->addWidget(m_btnLoadDB);
     leftLayout->addWidget(m_btnSaveDB);
 
@@ -114,7 +134,15 @@ void MainWindow::buildUi()
     mainLayout->addWidget(split);
     central->setLayout(mainLayout);
 
-    // connections
+    // connections - tests
+    connect(m_btnAddTest, &QPushButton::clicked, this, &MainWindow::onAddTest);
+    connect(m_btnRemoveTest, &QPushButton::clicked, this, &MainWindow::onRemoveTest);
+    connect(m_comboTests, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onTestSelected);
+    // save test name/description when focus lost or on explicit Save DB
+    connect(m_editTestName, &QLineEdit::editingFinished, this, &MainWindow::onSaveTest);
+    connect(m_editTestDescription, &QLineEdit::editingFinished, this, &MainWindow::onSaveTest);
+
+    // connections - questions
     connect(m_btnAddQuestion, &QPushButton::clicked, this, &MainWindow::onAddQuestion);
     connect(m_btnRemoveQuestion, &QPushButton::clicked, this, &MainWindow::onRemoveQuestion);
     connect(m_listQuestions, &QListWidget::currentRowChanged, this, &MainWindow::onQuestionSelected);
@@ -130,10 +158,102 @@ void MainWindow::buildUi()
     onTypeChanged(0);
 }
 
+void MainWindow::refreshTestCombo()
+{
+    m_comboTests->clear();
+    for (const Test &t : m_tests) {
+        m_comboTests->addItem(t.name, t.id);
+    }
+}
+
+void MainWindow::onAddTest()
+{
+    Test t;
+    t.id = QUuid::createUuid().toString();
+    t.name = "Novy test";
+    t.description = "";
+    m_tests.append(t);
+    refreshTestCombo();
+    int idx = m_comboTests->count()-1;
+    m_comboTests->setCurrentIndex(idx);
+    m_editTestName->setText(t.name);
+    m_editTestDescription->setText(t.description);
+}
+
+void MainWindow::onRemoveTest()
+{
+    int idx = m_comboTests->currentIndex();
+    if (idx < 0 || idx >= m_tests.size()) return;
+    QString testId = m_tests[idx].id;
+    QString err;
+    if (!DBManager::instance().removeTest(testId, &err)) {
+        QMessageBox::warning(this, "Chyba při mazání testu z DB", err);
+        // continue to remove locally even if DB delete failed? here we remove locally then refresh
+    }
+    m_tests.remove(idx);
+    refreshTestCombo();
+    // clear questions
+    m_questions.clear();
+    refreshQuestionList();
+    m_editTestName->clear();
+    m_editTestDescription->clear();
+}
+
+void MainWindow::onTestSelected()
+{
+    int idx = m_comboTests->currentIndex();
+    if (idx < 0 || idx >= m_tests.size()) {
+        // clear UI
+        m_questions.clear();
+        refreshQuestionList();
+        m_editTestName->clear();
+        m_editTestDescription->clear();
+        return;
+    }
+    const Test &t = m_tests[idx];
+    m_editTestName->setText(t.name);
+    m_editTestDescription->setText(t.description);
+
+    // load questions for this test
+    QString err;
+    QVector<Question> loaded;
+    if (!DBManager::instance().loadQuestionsForTest(t.id, loaded, &err)) {
+        QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
+        m_questions.clear();
+    } else {
+        m_questions = std::move(loaded);
+    }
+    refreshQuestionList();
+    if (!m_questions.isEmpty()) m_listQuestions->setCurrentRow(0);
+}
+
+void MainWindow::onSaveTest()
+{
+    int idx = m_comboTests->currentIndex();
+    if (idx < 0 || idx >= m_tests.size()) return;
+    Test &t = m_tests[idx];
+    t.name = m_editTestName->text().trimmed();
+    t.description = m_editTestDescription->text().trimmed();
+
+    QString err;
+    if (!DBManager::instance().addOrUpdateTest(t, &err)) {
+        QMessageBox::warning(this, "Chyba při ukládání testu do DB", err);
+    } else {
+        refreshTestCombo();
+        m_comboTests->setCurrentIndex(idx);
+    }
+}
+
 void MainWindow::onAddQuestion()
 {
+    int tidx = m_comboTests->currentIndex();
+    if (tidx < 0) {
+        QMessageBox::warning(this, "Žádný test", "Nejprve vytvořte nebo vyberte test.");
+        return;
+    }
     Question q;
     q.id = QUuid::createUuid().toString();
+    q.testId = m_tests[tidx].id;
     q.text = "Nová otázka";
     q.type = QuestionType::SingleChoice;
     q.options = { Answer{"Možnost 1", true}, Answer{"Možnost 2", false} };
@@ -150,7 +270,6 @@ void MainWindow::onRemoveQuestion()
     QString err;
     if (!DBManager::instance().removeQuestion(m_questions[row].id, &err)) {
         QMessageBox::warning(this, "Chyba při mazání z DB", err);
-        // still remove locally if desired; here we attempt to reload
     }
 
     m_questions.remove(row);
@@ -230,23 +349,44 @@ void MainWindow::onRemoveAnswer()
 void MainWindow::onLoadFromDB()
 {
     QString err;
-    QVector<Question> loaded;
-    if (!DBManager::instance().loadAllQuestions(loaded, &err)) {
-        QMessageBox::warning(this, "Chyba při načítání DB", err);
+    QVector<Test> loadedTests;
+    if (!DBManager::instance().loadTests(loadedTests, &err)) {
+        QMessageBox::warning(this, "Chyba při načítání DB (tests)", err);
         return;
     }
-    m_questions = std::move(loaded);
-    refreshQuestionList();
-    if (!m_questions.isEmpty()) m_listQuestions->setCurrentRow(0);
+    m_tests = std::move(loadedTests);
+    refreshTestCombo();
+
+    // select first test if exists
+    if (!m_tests.isEmpty()) {
+        m_comboTests->setCurrentIndex(0);
+        onTestSelected();
+    } else {
+        m_questions.clear();
+        refreshQuestionList();
+    }
 }
 
 void MainWindow::onSaveToDB()
 {
     // apply current editor into question
-    int idx = m_listQuestions->currentRow();
-    if (idx >= 0) collectEditorToQuestion(idx);
+    int qidx = m_listQuestions->currentRow();
+    if (qidx >= 0) collectEditorToQuestion(qidx);
 
-    // Save all questions into DB (addOrUpdate)
+    // Save current test metadata (if any)
+    int tidx = m_comboTests->currentIndex();
+    if (tidx >= 0) {
+        Test &t = m_tests[tidx];
+        t.name = m_editTestName->text().trimmed();
+        t.description = m_editTestDescription->text().trimmed();
+        QString err;
+        if (!DBManager::instance().addOrUpdateTest(t, &err)) {
+            QMessageBox::warning(this, "Chyba při ukládání testu do DB", err);
+            return;
+        }
+    }
+
+    // Save all questions of current test into DB (addOrUpdate)
     QString err;
     for (const Question &q : m_questions) {
         if (!DBManager::instance().addOrUpdateQuestion(q, &err)) {
@@ -254,7 +394,7 @@ void MainWindow::onSaveToDB()
             return;
         }
     }
-    QMessageBox::information(this, "Uloženo", "Všechny otázky byly uloženy do DB.");
+    QMessageBox::information(this, "Uloženo", "Test a otázky byly uloženy do DB.");
 }
 
 void MainWindow::onApplyEdit()
@@ -288,20 +428,28 @@ void MainWindow::collectEditorToQuestion(int index)
     q.expectedText = m_editExpectedText->text();
 }
 
+// ...
+
 void MainWindow::onStartTest()
 {
     // apply current edit
-    int idx = m_listQuestions->currentRow();
-    if (idx >= 0) collectEditorToQuestion(idx);
+    int qidx = m_listQuestions->currentRow();
+    if (qidx >= 0) collectEditorToQuestion(qidx);
 
-    if (m_questions.isEmpty()) {
-        QMessageBox::warning(this, "Žádné otázky", "Nejsou žádné otázky. Načtěte nebo vytvořte otázky.");
+    if (m_tests.isEmpty()) {
+        QMessageBox::warning(this, "Žádný test", "Nejsou žádné testy. Vytvořte nebo načtěte test.");
         return;
     }
+    int tidx = m_comboTests->currentIndex();
+    if (tidx < 0 || tidx >= m_tests.size()) {
+        QMessageBox::warning(this, "Žádný test vybran", "Vyberte test, který chcete spustit.");
+        return;
+    }
+
     int count = m_spinTestCount->value();
     Testrunner dlg(this);
-    dlg.setQuestions(m_questions);
     dlg.setQuestionCount(count);
-    // startTest will open dialog modally and handle saving results
+    dlg.setTestId(m_tests[tidx].id);
+    dlg.setTestName(m_tests[tidx].name);
     dlg.startTest();
 }

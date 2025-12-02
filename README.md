@@ -1,27 +1,27 @@
-# QtTestMaker (SQLite edition)
+```markdown
+# QtTestMaker (multiple tests, SQLite edition)
 
-Tato verze aplikace používá SQLite databázi místo JSON souborů. Data (otázky a možnosti) jsou ukládána do SQLite souboru, výsledky testů se ukládají také do DB. Po dokončení testu můžete výsledky otevřít ve výchozím poštovním klientovi (předvyplněný email) a odeslat je.
+Tato verze aplikace nyní podporuje více testů (sady otázek). Každý test má své ID, název a volitelný popis. Otázky jsou přiřazeny k testu přes test_id v databázi.
 
-Hlavní vlastnosti:
-- Typy otázek: single-choice, multiple-choice, text (přesný text)
-- Editor otázek (přidávání/úprava/mazání)
-- Uložení/načtení otázek v SQLite DB
-- Spouštění testu: náhodný výběr podmnožiny otázek, náhodné pořadí možností
-- Ukládání výsledků testu do DB (včetně detailů)
-- Odeslat výsledky jako email (otevře výchozí mail klient s předvyplněným tělem)
-
-Sestavení:
-1) Potřebujete Qt 5 (Widgets + Sql) a CMake.
-2) mkdir build && cd build
-3) cmake .. && cmake --build .
+Hlavní novinky:
+- Nová tabulka tests v SQLite.
+- Otázky mají test_id -> umožňuje ukládat více oddělených testů.
+- Uživatelské rozhraní: vytvářejte/odstraňujte testy, vyberte test a spravujte jeho otázky.
+- Při spuštění testu vyberte, který test se bude zobrazovat studentovi.
 
 Použití:
-- Po spuštění se vytvoří/otevře `questions.db` v aktuálním adresáři.
-- V levém panelu spravujte seznam otázek.
-- Pro uložení změn do DB klikněte "Uložit do DB".
-- Pro spuštění testu nastavte počet otázek a klikněte "Spustit test".
-- Po dokončení testu si můžete nechat výsledky uložit do DB a/nebo je poslat emailem (otevře se výchozí mailový klient).
+1) V levém horním rohu vyber nebo vytvoř test ( tlačítka Přidat test / Odstranit test ).
+2) Uprav název a popis testu (pole pod výběrem). Pole se uloží při kliknutí na "Uložit do DB" nebo při opuštění editace.
+3) Přidávej otázky pouze pro aktuálně vybraný test.
+4) Klikni "Uložit do DB" pro uložení testu a jeho otázek.
 
-Poznámky:
-- Pro robustní nasazení přidejte validace (např. single-choice má právě jednu správnou odpověď).
-- Odesílání emailu v této ukázce používá `mailto:` (otevře výchozí poštovní aplikaci). Pokud chcete přímé odesílání přes SMTP z aplikace (včetně autentizace/STARTTLS), mohu přidat jednoduchého SMTP klienta nebo podporu konfigurace SMTP serveru.
+Poznámky pro vývojáře:
+- DBManager poskytuje nové metody: loadTests/addOrUpdateTest/removeTest/loadQuestionsForTest.
+- Ukládání výsledků nyní zahrnuje test_id.
+- Při migraci z předchozí verze: nová kolona test_id je přidána při inicializaci DB (v CREATE TABLE je sloupec přítomen).
+
+Další možné vylepšení:
+- Zobrazení seznamu výsledků pro každý test.
+- Import/export testů (JSON / CSV / ZIP).
+- Role uživatelů (zadavatel vs. student) a autentizace.
+```

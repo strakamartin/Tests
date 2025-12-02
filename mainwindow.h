@@ -20,6 +20,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
 
 private slots:
+    // tests
+    void onAddTest();
+    void onRemoveTest();
+    void onTestSelected();
+    void onSaveTest();
+
+    // questions
     void onAddQuestion();
     void onRemoveQuestion();
     void onQuestionSelected();
@@ -34,12 +41,19 @@ private slots:
 private:
     void buildUi();
     void refreshQuestionList();
+    void refreshTestCombo();
     void loadQuestionIntoEditor(int index);
     void collectEditorToQuestion(int index);
 
     QVector<Question> m_questions;
+    QVector<Test> m_tests;
 
     // editor widgets
+    QComboBox *m_comboTests;
+    QPushButton *m_btnAddTest;
+    QPushButton *m_btnRemoveTest;
+    QLineEdit *m_editTestName;
+    QLineEdit *m_editTestDescription;
     QListWidget *m_listQuestions;
     QPushButton *m_btnAddQuestion;
     QPushButton *m_btnRemoveQuestion;

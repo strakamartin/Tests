@@ -7,7 +7,6 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QButtonGroup>
-#include <QScrollArea>
 #include <QMessageBox>
 #include <QRandomGenerator>
 #include <algorithm>
@@ -54,20 +53,46 @@ Testrunner::Testrunner(QWidget *parent)
     connect(m_btnSendEmail, &QPushButton::clicked, this, &Testrunner::onSendEmail);
 }
 
-void Testrunner::setQuestions(const QVector<Question> &qs) {
-    m_allQuestions = qs;
-}
-
 void Testrunner::setQuestionCount(int n) {
     m_questionCount = n;
 }
 
+void Testrunner::setTestId(const QString &testId)
+{
+    m_testId = testId;
+}
+
+void Testrunner::setTestName(const QString &testName)
+{
+    m_testName = testName;
+}
+
+bool Testrunner::loadQuestionsFromDB()
+{
+    if (m_testId.isEmpty()) {
+        QMessageBox::warning(this, "Chyba", "Neurčeno ID testu.");
+        return false;
+    }
+    QString err;
+    QVector<Question> loaded;
+    if (!DBManager::instance().loadQuestionsForTest(m_testId, loaded, &err)) {
+        QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
+        return false;
+    }
+    m_allQuestions = std::move(loaded);
+    return true;
+}
+
 void Testrunner::startTest()
 {
+    // load questions for the test from DB
+    if (!loadQuestionsFromDB()) return;
+
     if (m_allQuestions.isEmpty()) {
-        QMessageBox::warning(this, "Chyba", "Nejsou otázky.");
+        QMessageBox::warning(this, "Chyba", "Vybraný test neobsahuje žádné otázky.");
         return;
     }
+
     prepareRandomTest();
     m_userAnswers.clear();
     m_userAnswers.resize(m_testQuestions.size());
@@ -78,7 +103,7 @@ void Testrunner::startTest()
 
 void Testrunner::prepareRandomTest()
 {
-    // choose random subset of questions
+    // choose random subset of questions from m_allQuestions
     int total = m_allQuestions.size();
     int n = qMin(m_questionCount, total);
     QVector<int> idx;
@@ -208,7 +233,8 @@ void Testrunner::onSubmit()
     // Save result to DB (student email optional)
     QString err;
     QString email = m_editStudentEmail->text().trimmed();
-    if (!DBManager::instance().saveResult(email, score, m_testQuestions.size(), details, &err)) {
+
+    if (!DBManager::instance().saveResult(email, m_testId, score, m_testQuestions.size(), details, &err)) {
         QMessageBox::warning(this, "Chyba ukládání výsledku", err);
     } else {
         QMessageBox::information(this, "Uloženo", "Výsledek byl uložen do databáze.");
@@ -289,7 +315,9 @@ void Testrunner::onSendEmail()
     mailto.setScheme("mailto");
     mailto.setPath(to);
     QUrlQuery q;
-    q.addQueryItem("subject", "Výsledek testu");
+    QString subject = "Výsledek testu";
+    if (!m_testName.isEmpty()) subject += ": " + m_testName;
+    q.addQueryItem("subject", subject);
     q.addQueryItem("body", body);
     mailto.setQuery(q);
 
