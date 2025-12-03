@@ -1,27 +1,17 @@
 ```markdown
-# QtTestMaker (multiple tests, SQLite edition)
+# QtTestMaker — Teacher / Student modes & immediate save
 
-Tato verze aplikace nyní podporuje více testů (sady otázek). Každý test má své ID, název a volitelný popis. Otázky jsou přiřazeny k testu přes test_id v databázi.
+Změny v této verzi:
+- Aplikace má dva módy: učitel (teacher) a student (student).
+  - Učitel: spusť program s parametrem `-u` (např. `./QtTestMaker -u`). Toto rozhraní je upravovací (editor) — umožňuje vytvářet testy a otázky a vše se ukládá okamžitě do DB (bez tlačítka "Uložit změny do paměti" nebo "Načíst z DB"/"Uložit do DB").
+  - Student: výchozí mód — zobrazí se v hlavním okně vlevo seznam testů. Student si vybere test a otázky se mu budou postupně zobrazovat přímo v hlavním okně (bez separátního dialogu).
+- Všechny změny (název testu, popis, text otázky, typ, možnosti, odstranění/ přidání) se automaticky uloží do SQLite DB (DBManager).
+- DB migrace: při spuštění se kontrolují a případně přidávají chybějící sloupce (test_id apod.) — zachována kompatibilita se starší DB.
 
-Hlavní novinky:
-- Nová tabulka tests v SQLite.
-- Otázky mají test_id -> umožňuje ukládat více oddělených testů.
-- Uživatelské rozhraní: vytvářejte/odstraňujte testy, vyberte test a spravujte jeho otázky.
-- Při spuštění testu vyberte, který test se bude zobrazovat studentovi.
+Poznámky pro spuštění:
+- Pro učitele: `QtTestMaker -u`
+- Pro studenta: `QtTestMaker`
 
-Použití:
-1) V levém horním rohu vyber nebo vytvoř test ( tlačítka Přidat test / Odstranit test ).
-2) Uprav název a popis testu (pole pod výběrem). Pole se uloží při kliknutí na "Uložit do DB" nebo při opuštění editace.
-3) Přidávej otázky pouze pro aktuálně vybraný test.
-4) Klikni "Uložit do DB" pro uložení testu a jeho otázek.
-
-Poznámky pro vývojáře:
-- DBManager poskytuje nové metody: loadTests/addOrUpdateTest/removeTest/loadQuestionsForTest.
-- Ukládání výsledků nyní zahrnuje test_id.
-- Při migraci z předchozí verze: nová kolona test_id je přidána při inicializaci DB (v CREATE TABLE je sloupec přítomen).
-
-Další možné vylepšení:
-- Zobrazení seznamu výsledků pro každý test.
-- Import/export testů (JSON / CSV / ZIP).
-- Role uživatelů (zadavatel vs. student) a autentizace.
+Doporučení:
+- Před úpravami většího množství otázek raději zálohujte soubor DB.
 ```

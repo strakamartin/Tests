@@ -1,21 +1,16 @@
 #include <QApplication>
 #include "mainwindow.h"
-#include "dbmanager.h"
+#include <QStringList>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    // Optional: initialize a default DB file in the app working directory
-    QString defaultDb = "questions.db";
-    QString err;
-    if (!DBManager::instance().openDatabase(defaultDb, &err)) {
-        // If DB cannot be created/opened, show a warning but still run app
-        qWarning("DB open failed: %s", qPrintable(err));
-    }
+    // detect teacher mode by presence of "-u" parameter (as requested)
+    QStringList args = a.arguments();
+    bool teacherMode = args.contains(QStringLiteral("-u"));
 
-    MainWindow w;
-    w.resize(1000, 600);
+    MainWindow w(teacherMode);
     w.show();
     return a.exec();
 }
