@@ -28,30 +28,30 @@ private slots:
     void onSendEmail();
 
 private:
-    bool loadQuestionsFromDB(); // loads m_allQuestions from DB using m_testId
+    bool loadQuestionsFromDB(); // loads mAllQuestions from DB using mTestId
     void prepareRandomTest();
     void showCurrentQuestion();
     void saveCurrentAnswerForIndex(int index);
     double evaluateAndReturnScore(QVector<DBManager::ResultDetail> &outDetails);
 
-    QVector<Question> m_allQuestions;   // all questions loaded for the selected test
-    QVector<Question> m_testQuestions;  // randomized subset used in test runtime
-    int m_questionCount = 10;
-    int m_currentIndex = 0;
+    QVector<Question> mAllQuestions;   // all questions loaded for the selected test
+    QVector<Question> mTestQuestions;  // randomized subset used in test runtime
+    int mQuestionCount = 10;
+    int mCurrentIndex = 0;
 
     // UI
-    QLabel *m_lblProgress;
-    QLabel *m_lblQuestion;
-    QWidget *m_answerWidget; // holder for dynamic widgets
-    QPushButton *m_btnNext;
-    QPushButton *m_btnSubmit;
+    QLabel *mLblProgress;
+    QLabel *mLblQuestion;
+    QWidget *mAnswerWidget; // holder for dynamic widgets
+    QPushButton *mBtnNext;
+    QPushButton *mBtnSubmit;
 
     // email UI
-    QLineEdit *m_editStudentEmail;
-    QPushButton *m_btnSendEmail;
+    QLineEdit *mEditStudentEmail;
+    QPushButton *mBtnSendEmail;
 
     // per-question dynamic widgets & storage
-    QList<QWidget*> m_currentAnswerWidgets;
+    QList<QWidget*> mCurrentAnswerWidgets;
     struct StoredAnswer {
         QString questionId;
         // for choices: store selected option texts (matching by text)
@@ -59,11 +59,11 @@ private:
         // for text: stored text
         QString textAnswer;
     };
-    QVector<StoredAnswer> m_userAnswers; // same size as m_testQuestions
+    QVector<StoredAnswer> mUserAnswers; // same size as mTestQuestions
 
     // store current test id/name for saving results / email subject
-    QString m_testId;
-    QString m_testName;
+    QString mTestId;
+    QString mTestName;
 };
 
 #endif // TESTRUNNER_H

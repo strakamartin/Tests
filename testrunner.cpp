@@ -20,66 +20,66 @@ Testrunner::Testrunner(QWidget *parent)
     setWindowTitle("Test");
 
     QVBoxLayout *main = new QVBoxLayout;
-    m_lblProgress = new QLabel;
-    m_lblQuestion = new QLabel;
-    m_lblQuestion->setWordWrap(true);
-    m_answerWidget = new QWidget;
+    mLblProgress = new QLabel;
+    mLblQuestion = new QLabel;
+    mLblQuestion->setWordWrap(true);
+    mAnswerWidget = new QWidget;
     QVBoxLayout *aw = new QVBoxLayout;
     aw->setContentsMargins(0,0,0,0);
-    m_answerWidget->setLayout(aw);
+    mAnswerWidget->setLayout(aw);
 
-    m_btnNext = new QPushButton("Další");
-    m_btnSubmit = new QPushButton("Odevzdat test");
+    mBtnNext = new QPushButton("Další");
+    mBtnSubmit = new QPushButton("Odevzdat test");
 
-    m_editStudentEmail = new QLineEdit;
-    m_editStudentEmail->setPlaceholderText("Zadejte svůj e-mail pro zaslání výsledků (volitelné)");
-    m_btnSendEmail = new QPushButton("Odeslat výsledky emailem (otevře pošt. klient)");
+    mEditStudentEmail = new QLineEdit;
+    mEditStudentEmail->setPlaceholderText("Zadejte svůj e-mail pro zaslání výsledků (volitelné)");
+    mBtnSendEmail = new QPushButton("Odeslat výsledky emailem (otevře pošt. klient)");
 
     QHBoxLayout *btns = new QHBoxLayout;
-    btns->addWidget(m_btnNext);
-    btns->addWidget(m_btnSubmit);
+    btns->addWidget(mBtnNext);
+    btns->addWidget(mBtnSubmit);
 
-    main->addWidget(m_lblProgress);
-    main->addWidget(m_lblQuestion);
-    main->addWidget(m_answerWidget);
+    main->addWidget(mLblProgress);
+    main->addWidget(mLblQuestion);
+    main->addWidget(mAnswerWidget);
     main->addLayout(btns);
-    main->addWidget(m_editStudentEmail);
-    main->addWidget(m_btnSendEmail);
+    main->addWidget(mEditStudentEmail);
+    main->addWidget(mBtnSendEmail);
 
     setLayout(main);
 
-    connect(m_btnNext, &QPushButton::clicked, this, &Testrunner::onNext);
-    connect(m_btnSubmit, &QPushButton::clicked, this, &Testrunner::onSubmit);
-    connect(m_btnSendEmail, &QPushButton::clicked, this, &Testrunner::onSendEmail);
+    connect(mBtnNext, &QPushButton::clicked, this, &Testrunner::onNext);
+    connect(mBtnSubmit, &QPushButton::clicked, this, &Testrunner::onSubmit);
+    connect(mBtnSendEmail, &QPushButton::clicked, this, &Testrunner::onSendEmail);
 }
 
 void Testrunner::setQuestionCount(int n) {
-    m_questionCount = n;
+    mQuestionCount = n;
 }
 
 void Testrunner::setTestId(const QString &testId)
 {
-    m_testId = testId;
+    mTestId = testId;
 }
 
 void Testrunner::setTestName(const QString &testName)
 {
-    m_testName = testName;
+    mTestName = testName;
 }
 
 bool Testrunner::loadQuestionsFromDB()
 {
-    if (m_testId.isEmpty()) {
+    if (mTestId.isEmpty()) {
         QMessageBox::warning(this, "Chyba", "Neurčeno ID testu.");
         return false;
     }
     QString err;
     QVector<Question> loaded;
-    if (!DBManager::instance().loadQuestionsForTest(m_testId, loaded, &err)) {
+    if (!DBManager::instance().loadQuestionsForTest(mTestId, loaded, &err)) {
         QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
         return false;
     }
-    m_allQuestions = std::move(loaded);
+    mAllQuestions = std::move(loaded);
     return true;
 }
 
@@ -88,36 +88,36 @@ void Testrunner::startTest()
     // load questions for the test from DB
     if (!loadQuestionsFromDB()) return;
 
-    if (m_allQuestions.isEmpty()) {
+    if (mAllQuestions.isEmpty()) {
         QMessageBox::warning(this, "Chyba", "Vybraný test neobsahuje žádné otázky.");
         return;
     }
 
     prepareRandomTest();
-    m_userAnswers.clear();
-    m_userAnswers.resize(m_testQuestions.size());
-    m_currentIndex = 0;
+    mUserAnswers.clear();
+    mUserAnswers.resize(mTestQuestions.size());
+    mCurrentIndex = 0;
     showCurrentQuestion();
     exec();
 }
 
 void Testrunner::prepareRandomTest()
 {
-    // choose random subset of questions from m_allQuestions
-    int total = m_allQuestions.size();
-    int n = qMin(m_questionCount, total);
+    // choose random subset of questions
+    int total = mAllQuestions.size();
+    int n = qMin(mQuestionCount, total);
     QVector<int> idx;
     idx.reserve(total);
     for (int i = 0; i < total; ++i) idx.append(i);
     std::shuffle(idx.begin(), idx.end(), *QRandomGenerator::global());
-    m_testQuestions.clear();
-    for (int i = 0; i < n; ++i) m_testQuestions.append(m_allQuestions[idx[i]]);
+    mTestQuestions.clear();
+    for (int i = 0; i < n; ++i) mTestQuestions.append(mAllQuestions[idx[i]]);
 }
 
 void Testrunner::showCurrentQuestion()
 {
     // clear previous answer widgets
-    QLayout *lay = m_answerWidget->layout();
+    QLayout *lay = mAnswerWidget->layout();
     QLayoutItem *child;
     while ((child = lay->takeAt(0)) != nullptr) {
         if (child->widget()) {
@@ -125,21 +125,21 @@ void Testrunner::showCurrentQuestion()
         }
         delete child;
     }
-    m_currentAnswerWidgets.clear();
+    mCurrentAnswerWidgets.clear();
 
-    if (m_currentIndex < 0 || m_currentIndex >= m_testQuestions.size()) return;
+    if (mCurrentIndex < 0 || mCurrentIndex >= mTestQuestions.size()) return;
 
-    const Question &q = m_testQuestions[m_currentIndex];
-    m_lblProgress->setText(QString("Otázka %1 / %2").arg(m_currentIndex+1).arg(m_testQuestions.size()));
-    m_lblQuestion->setText(q.text);
+    const Question &q = mTestQuestions[mCurrentIndex];
+    mLblProgress->setText(QString("Otázka %1 / %2").arg(mCurrentIndex+1).arg(mTestQuestions.size()));
+    mLblQuestion->setText(q.text);
 
     if (q.type == QuestionType::TextAnswer) {
         QLineEdit *le = new QLineEdit;
         // restore previous if exists
-        const StoredAnswer &sa = m_userAnswers[m_currentIndex];
+        const StoredAnswer &sa = mUserAnswers[mCurrentIndex];
         if (!sa.textAnswer.isEmpty()) le->setText(sa.textAnswer);
         lay->addWidget(le);
-        m_currentAnswerWidgets.append(le);
+        mCurrentAnswerWidgets.append(le);
     } else {
         // shuffle options
         int m = q.options.size();
@@ -155,9 +155,9 @@ void Testrunner::showCurrentQuestion()
                 QRadioButton *rb = new QRadioButton(q.options[origIdx].text);
                 lay->addWidget(rb);
                 grp->addButton(rb, origIdx);
-                m_currentAnswerWidgets.append(rb);
+                mCurrentAnswerWidgets.append(rb);
                 // restore selection if present
-                const StoredAnswer &sa = m_userAnswers[m_currentIndex];
+                const StoredAnswer &sa = mUserAnswers[mCurrentIndex];
                 if (!sa.selectedOptionsTexts.isEmpty()) {
                     if (sa.selectedOptionsTexts.contains(q.options[origIdx].text)) rb->setChecked(true);
                 }
@@ -167,9 +167,9 @@ void Testrunner::showCurrentQuestion()
                 int origIdx = indices[i];
                 QCheckBox *cb = new QCheckBox(q.options[origIdx].text);
                 lay->addWidget(cb);
-                m_currentAnswerWidgets.append(cb);
+                mCurrentAnswerWidgets.append(cb);
                 // restore selection if present
-                const StoredAnswer &sa = m_userAnswers[m_currentIndex];
+                const StoredAnswer &sa = mUserAnswers[mCurrentIndex];
                 if (!sa.selectedOptionsTexts.isEmpty()) {
                     if (sa.selectedOptionsTexts.contains(q.options[origIdx].text)) cb->setChecked(true);
                 }
@@ -180,40 +180,40 @@ void Testrunner::showCurrentQuestion()
 
 void Testrunner::saveCurrentAnswerForIndex(int index)
 {
-    if (index < 0 || index >= m_testQuestions.size()) return;
+    if (index < 0 || index >= mTestQuestions.size()) return;
     StoredAnswer sa;
-    sa.questionId = m_testQuestions[index].id;
-    const Question &q = m_testQuestions[index];
+    sa.questionId = mTestQuestions[index].id;
+    const Question &q = mTestQuestions[index];
 
     if (q.type == QuestionType::TextAnswer) {
-        if (!m_currentAnswerWidgets.isEmpty()) {
-            QLineEdit *le = qobject_cast<QLineEdit*>(m_currentAnswerWidgets.first());
+        if (!mCurrentAnswerWidgets.isEmpty()) {
+            QLineEdit *le = qobject_cast<QLineEdit*>(mCurrentAnswerWidgets.first());
             if (le) sa.textAnswer = le->text().trimmed();
         }
     } else if (q.type == QuestionType::SingleChoice) {
-        for (QWidget *w : m_currentAnswerWidgets) {
+        for (QWidget *w : mCurrentAnswerWidgets) {
             QRadioButton *rb = qobject_cast<QRadioButton*>(w);
             if (!rb) continue;
             if (rb->isChecked()) sa.selectedOptionsTexts.append(rb->text());
         }
     } else { // multiple
-        for (QWidget *w : m_currentAnswerWidgets) {
+        for (QWidget *w : mCurrentAnswerWidgets) {
             QCheckBox *cb = qobject_cast<QCheckBox*>(w);
             if (!cb) continue;
             if (cb->isChecked()) sa.selectedOptionsTexts.append(cb->text());
         }
     }
 
-    m_userAnswers[index] = sa;
+    mUserAnswers[index] = sa;
 }
 
 void Testrunner::onNext()
 {
     // save current answers
-    saveCurrentAnswerForIndex(m_currentIndex);
+    saveCurrentAnswerForIndex(mCurrentIndex);
 
-    if (m_currentIndex + 1 < m_testQuestions.size()) {
-        ++m_currentIndex;
+    if (mCurrentIndex + 1 < mTestQuestions.size()) {
+        ++mCurrentIndex;
         showCurrentQuestion();
     } else {
         QMessageBox::information(this, "Konec", "Došli jsme na konec testu. Klikněte Odevzdat test pro vyhodnocení.");
@@ -223,18 +223,18 @@ void Testrunner::onNext()
 void Testrunner::onSubmit()
 {
     // save current answers
-    saveCurrentAnswerForIndex(m_currentIndex);
+    saveCurrentAnswerForIndex(mCurrentIndex);
 
     QVector<DBManager::ResultDetail> details;
     double score = evaluateAndReturnScore(details);
-    QString msg = QString("Skóre: %1 / %2").arg(score).arg(m_testQuestions.size());
+    QString msg = QString("Skóre: %1 / %2").arg(score).arg(mTestQuestions.size());
     QMessageBox::information(this, "Výsledek testu", msg);
 
     // Save result to DB (student email optional)
     QString err;
-    QString email = m_editStudentEmail->text().trimmed();
+    QString email = mEditStudentEmail->text().trimmed();
 
-    if (!DBManager::instance().saveResult(email, m_testId, score, m_testQuestions.size(), details, &err)) {
+    if (!DBManager::instance().saveResult(email, mTestId, score, mTestQuestions.size(), details, &err)) {
         QMessageBox::warning(this, "Chyba ukládání výsledku", err);
     } else {
         QMessageBox::information(this, "Uloženo", "Výsledek byl uložen do databáze.");
@@ -247,9 +247,9 @@ double Testrunner::evaluateAndReturnScore(QVector<DBManager::ResultDetail> &outD
 {
     double totalScore = 0.0;
     outDetails.clear();
-    for (int i = 0; i < m_testQuestions.size(); ++i) {
-        const Question &q = m_testQuestions[i];
-        const StoredAnswer &sa = m_userAnswers[i];
+    for (int i = 0; i < mTestQuestions.size(); ++i) {
+        const Question &q = mTestQuestions[i];
+        const StoredAnswer &sa = mUserAnswers[i];
         bool correct = false;
         QString ua; // description of user answer
 
@@ -304,19 +304,19 @@ void Testrunner::onSendEmail()
     QVector<DBManager::ResultDetail> details;
     double score = evaluateAndReturnScore(details);
     QString body;
-    body += QString("Skóre: %1 / %2\n\n").arg(score).arg(m_testQuestions.size());
+    body += QString("Skóre: %1 / %2\n\n").arg(score).arg(mTestQuestions.size());
     for (int i = 0; i < details.size(); ++i) {
         body += QString("Otázka %1: %2\n").arg(i+1).arg(details[i].correct ? "OK" : "Špatně");
         body += QString("Odpověď studenta: %1\n\n").arg(details[i].userAnswer);
     }
 
     QUrl mailto;
-    QString to = m_editStudentEmail->text().trimmed();
+    QString to = mEditStudentEmail->text().trimmed();
     mailto.setScheme("mailto");
     mailto.setPath(to);
     QUrlQuery q;
     QString subject = "Výsledek testu";
-    if (!m_testName.isEmpty()) subject += ": " + m_testName;
+    if (!mTestName.isEmpty()) subject += ": " + mTestName;
     q.addQueryItem("subject", subject);
     q.addQueryItem("body", body);
     mailto.setQuery(q);

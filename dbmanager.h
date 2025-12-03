@@ -39,7 +39,7 @@ private:
     DBManager() = default;
     bool ensureSchema(QString *err = nullptr);
 
-    QSqlDatabase m_db;
+    QSqlDatabase mDb;
 };
 
 #endif // DBMANAGER_H

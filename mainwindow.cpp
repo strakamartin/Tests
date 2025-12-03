@@ -26,14 +26,14 @@
 #include <algorithm>
 
 MainWindow::MainWindow(bool teacherMode, QWidget *parent)
-    : QMainWindow(parent), m_teacherMode(teacherMode)
+    : QMainWindow(parent), mTeacherMode(teacherMode)
 {
     // debounce timer for auto-save
-    m_autoSaveTimer.setSingleShot(true);
-    m_autoSaveTimer.setInterval(600); // ms
-    connect(&m_autoSaveTimer, &QTimer::timeout, this, &MainWindow::doAutoSave);
+    mAutoSaveTimer.setSingleShot(true);
+    mAutoSaveTimer.setInterval(600); // ms
+    connect(&mAutoSaveTimer, &QTimer::timeout, this, &MainWindow::doAutoSave);
 
-    if (m_teacherMode) buildTeacherUi();
+    if (mTeacherMode) buildTeacherUi();
     else buildStudentUi();
 
     // open DB (default path). Adjust path if you use custom filename/location.
@@ -44,7 +44,7 @@ MainWindow::MainWindow(bool teacherMode, QWidget *parent)
     }
 
     // load tests from DB
-    if (!DBManager::instance().loadTests(m_tests, &err)) {
+    if (!DBManager::instance().loadTests(mTests, &err)) {
         QMessageBox::warning(this, "DB load tests failed", err);
     }
     refreshTestList();
@@ -53,14 +53,14 @@ MainWindow::MainWindow(bool teacherMode, QWidget *parent)
 QString MainWindow::currentTestId() const
 {
     int idx = currentTestIndex();
-    if (idx >=0 && idx < m_tests.size()) return m_tests[idx].id;
+    if (idx >=0 && idx < mTests.size()) return mTests[idx].id;
     return QString();
 }
 
 int MainWindow::currentTestIndex() const
 {
-    if (!m_listTests) return -1;
-    return m_listTests->currentRow();
+    if (!mListTests) return -1;
+    return mListTests->currentRow();
 }
 
 /* -----------------------------
@@ -72,60 +72,60 @@ void MainWindow::buildTeacherUi()
     setCentralWidget(central);
 
     // Left: tests + test metadata + questions list
-    m_listTests = new QListWidget;
-    m_btnAddTest = new QPushButton("Přidat test");
-    m_btnRemoveTest = new QPushButton("Odstranit test");
-    m_editTestName = new QLineEdit;
-    m_editTestName->setPlaceholderText("Název testu");
-    m_editTestDescription = new QLineEdit;
-    m_editTestDescription->setPlaceholderText("Popis testu");
+    mListTests = new QListWidget;
+    mBtnAddTest = new QPushButton("Přidat test");
+    mBtnRemoveTest = new QPushButton("Odstranit test");
+    mEditTestName = new QLineEdit;
+    mEditTestName->setPlaceholderText("Název testu");
+    mEditTestDescription = new QLineEdit;
+    mEditTestDescription->setPlaceholderText("Popis testu");
 
     QHBoxLayout *testTop = new QHBoxLayout;
-    testTop->addWidget(m_btnAddTest);
-    testTop->addWidget(m_btnRemoveTest);
+    testTop->addWidget(mBtnAddTest);
+    testTop->addWidget(mBtnRemoveTest);
 
     QVBoxLayout *leftLayout = new QVBoxLayout;
     leftLayout->addWidget(new QLabel("Testy:"));
-    leftLayout->addWidget(m_listTests);
+    leftLayout->addWidget(mListTests);
     leftLayout->addLayout(testTop);
-    leftLayout->addWidget(m_editTestName);
-    leftLayout->addWidget(m_editTestDescription);
+    leftLayout->addWidget(mEditTestName);
+    leftLayout->addWidget(mEditTestDescription);
 
     // Question editor on right
-    m_listQuestions = new QListWidget;
-    m_btnAddQuestion = new QPushButton("Přidat otázku");
-    m_btnRemoveQuestion = new QPushButton("Odstranit otázku");
-    m_editQuestionText = new QTextEdit;
-    m_comboType = new QComboBox;
-    m_comboType->addItem("Jedna správná");
-    m_comboType->addItem("Více správných");
-    m_comboType->addItem("Textová odpověď");
-    m_tblAnswers = new QTableWidget(0,2);
-    m_tblAnswers->setHorizontalHeaderLabels(QStringList() << "Text" << "Správná");
-    m_tblAnswers->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_btnAddAnswer = new QPushButton("Přidat možnost");
-    m_btnRemoveAnswer = new QPushButton("Odstranit možnost");
-    m_editExpectedText = new QLineEdit;
+    mListQuestions = new QListWidget;
+    mBtnAddQuestion = new QPushButton("Přidat otázku");
+    mBtnRemoveQuestion = new QPushButton("Odstranit otázku");
+    mEditQuestionText = new QTextEdit;
+    mComboType = new QComboBox;
+    mComboType->addItem("Jedna správná");
+    mComboType->addItem("Více správných");
+    mComboType->addItem("Textová odpověď");
+    mTblAnswers = new QTableWidget(0,2);
+    mTblAnswers->setHorizontalHeaderLabels(QStringList() << "Text" << "Správná");
+    mTblAnswers->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    mBtnAddAnswer = new QPushButton("Přidat možnost");
+    mBtnRemoveAnswer = new QPushButton("Odstranit možnost");
+    mEditExpectedText = new QLineEdit;
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
     rightLayout->addWidget(new QLabel("Otázky:"));
-    rightLayout->addWidget(m_listQuestions);
+    rightLayout->addWidget(mListQuestions);
     QHBoxLayout *qBtns = new QHBoxLayout;
-    qBtns->addWidget(m_btnAddQuestion);
-    qBtns->addWidget(m_btnRemoveQuestion);
+    qBtns->addWidget(mBtnAddQuestion);
+    qBtns->addWidget(mBtnRemoveQuestion);
     rightLayout->addLayout(qBtns);
     rightLayout->addWidget(new QLabel("Text otázky:"));
-    rightLayout->addWidget(m_editQuestionText);
+    rightLayout->addWidget(mEditQuestionText);
     rightLayout->addWidget(new QLabel("Typ otázky:"));
-    rightLayout->addWidget(m_comboType);
+    rightLayout->addWidget(mComboType);
     rightLayout->addWidget(new QLabel("Možnosti:"));
-    rightLayout->addWidget(m_tblAnswers);
+    rightLayout->addWidget(mTblAnswers);
     QHBoxLayout *ansBtns = new QHBoxLayout;
-    ansBtns->addWidget(m_btnAddAnswer);
-    ansBtns->addWidget(m_btnRemoveAnswer);
+    ansBtns->addWidget(mBtnAddAnswer);
+    ansBtns->addWidget(mBtnRemoveAnswer);
     rightLayout->addLayout(ansBtns);
     rightLayout->addWidget(new QLabel("Očekávaný text (pro textovou odpověď):"));
-    rightLayout->addWidget(m_editExpectedText);
+    rightLayout->addWidget(mEditExpectedText);
     rightLayout->addStretch(1);
 
     QSplitter *split = new QSplitter;
@@ -140,38 +140,38 @@ void MainWindow::buildTeacherUi()
     central->setLayout(mainLayout);
 
     // connections
-    connect(m_btnAddTest, &QPushButton::clicked, this, &MainWindow::onAddTest);
+    connect(mBtnAddTest, &QPushButton::clicked, this, &MainWindow::onAddTest);
     // connect RemoveTest to our slot (implementaton provided)
-    connect(m_btnRemoveTest, &QPushButton::clicked, this, &MainWindow::onRemoveTest);
+    connect(mBtnRemoveTest, &QPushButton::clicked, this, &MainWindow::onRemoveTest);
 
-    connect(m_listTests, &QListWidget::currentRowChanged, this, &MainWindow::onTestSelected);
-    connect(m_editTestName, &QLineEdit::editingFinished, this, [this](){
-        int idx = m_listTests->currentRow();
-        if (idx < 0 || idx >= m_tests.size()) return;
-        m_tests[idx].name = m_editTestName->text().trimmed();
+    connect(mListTests, &QListWidget::currentRowChanged, this, &MainWindow::onTestSelected);
+    connect(mEditTestName, &QLineEdit::editingFinished, this, [this](){
+        int idx = mListTests->currentRow();
+        if (idx < 0 || idx >= mTests.size()) return;
+        mTests[idx].name = mEditTestName->text().trimmed();
         QString err;
-        DBManager::instance().addOrUpdateTest(m_tests[idx], &err);
+        DBManager::instance().addOrUpdateTest(mTests[idx], &err);
         refreshTestList();
     });
-    connect(m_editTestDescription, &QLineEdit::editingFinished, this, [this](){
-        int idx = m_listTests->currentRow();
-        if (idx < 0 || idx >= m_tests.size()) return;
-        m_tests[idx].description = m_editTestDescription->text().trimmed();
+    connect(mEditTestDescription, &QLineEdit::editingFinished, this, [this](){
+        int idx = mListTests->currentRow();
+        if (idx < 0 || idx >= mTests.size()) return;
+        mTests[idx].description = mEditTestDescription->text().trimmed();
         QString err;
-        DBManager::instance().addOrUpdateTest(m_tests[idx], &err);
+        DBManager::instance().addOrUpdateTest(mTests[idx], &err);
     });
 
-    connect(m_btnAddQuestion, &QPushButton::clicked, this, &MainWindow::onAddQuestion);
-    connect(m_btnRemoveQuestion, &QPushButton::clicked, this, &MainWindow::onRemoveQuestion);
-    connect(m_listQuestions, &QListWidget::currentRowChanged, this, &MainWindow::onQuestionSelected);
-    connect(m_comboType, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onTypeChanged);
-    connect(m_btnAddAnswer, &QPushButton::clicked, this, &MainWindow::onAddAnswer);
-    connect(m_btnRemoveAnswer, &QPushButton::clicked, this, &MainWindow::onRemoveAnswer);
+    connect(mBtnAddQuestion, &QPushButton::clicked, this, &MainWindow::onAddQuestion);
+    connect(mBtnRemoveQuestion, &QPushButton::clicked, this, &MainWindow::onRemoveQuestion);
+    connect(mListQuestions, &QListWidget::currentRowChanged, this, &MainWindow::onQuestionSelected);
+    connect(mComboType, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onTypeChanged);
+    connect(mBtnAddAnswer, &QPushButton::clicked, this, &MainWindow::onAddAnswer);
+    connect(mBtnRemoveAnswer, &QPushButton::clicked, this, &MainWindow::onRemoveAnswer);
 
     // auto-save triggers (debounced)
-    connect(m_editQuestionText, &QTextEdit::textChanged, this, &MainWindow::scheduleAutoSave);
-    connect(m_editExpectedText, &QLineEdit::textChanged, this, &MainWindow::scheduleAutoSave);
-    connect(m_tblAnswers, &QTableWidget::itemChanged, this, &MainWindow::scheduleAutoSave);
+    connect(mEditQuestionText, &QTextEdit::textChanged, this, &MainWindow::scheduleAutoSave);
+    connect(mEditExpectedText, &QLineEdit::textChanged, this, &MainWindow::scheduleAutoSave);
+    connect(mTblAnswers, &QTableWidget::itemChanged, this, &MainWindow::scheduleAutoSave);
 }
 
 void MainWindow::buildStudentUi()
@@ -180,49 +180,49 @@ void MainWindow::buildStudentUi()
     setCentralWidget(central);
 
     // left: tests list
-    m_listTests = new QListWidget;
-    m_listTests->setSelectionMode(QAbstractItemView::SingleSelection);
-    connect(m_listTests, &QListWidget::currentRowChanged, this, &MainWindow::onTestSelected);
+    mListTests = new QListWidget;
+    mListTests->setSelectionMode(QAbstractItemView::SingleSelection);
+    connect(mListTests, &QListWidget::currentRowChanged, this, &MainWindow::onTestSelected);
 
     QVBoxLayout *leftLayout = new QVBoxLayout;
     leftLayout->addWidget(new QLabel("Vyber test:"));
-    leftLayout->addWidget(m_listTests);
+    leftLayout->addWidget(mListTests);
 
     QWidget *leftWidget = new QWidget; leftWidget->setLayout(leftLayout);
 
     // right: student runner area
-    m_lblStudentProgress = new QLabel;
-    m_lblStudentQuestion = new QLabel;
-    m_lblStudentQuestion->setWordWrap(true);
-    m_widgetStudentAnswers = new QWidget;
+    mLblStudentProgress = new QLabel;
+    mLblStudentQuestion = new QLabel;
+    mLblStudentQuestion->setWordWrap(true);
+    mWidgetStudentAnswers = new QWidget;
     QVBoxLayout *aw = new QVBoxLayout;
     aw->setContentsMargins(0,0,0,0);
-    m_widgetStudentAnswers->setLayout(aw);
+    mWidgetStudentAnswers->setLayout(aw);
 
-    m_btnStudentNext = new QPushButton("Další");
-    m_btnStudentSubmit = new QPushButton("Odevzdat");
-    m_editStudentEmail = new QLineEdit;
-    m_editStudentEmail->setPlaceholderText("E-mail (volitelné)");
-    m_spinStudentCount = new QSpinBox;
-    m_spinStudentCount->setMinimum(1);
-    m_spinStudentCount->setMaximum(1000);
-    m_spinStudentCount->setValue(10);
+    mBtnStudentNext = new QPushButton("Další");
+    mBtnStudentSubmit = new QPushButton("Odevzdat");
+    mEditStudentEmail = new QLineEdit;
+    mEditStudentEmail->setPlaceholderText("E-mail (volitelné)");
+    mSpinStudentCount = new QSpinBox;
+    mSpinStudentCount->setMinimum(1);
+    mSpinStudentCount->setMaximum(1000);
+    mSpinStudentCount->setValue(10);
 
     QHBoxLayout *hTop = new QHBoxLayout;
     hTop->addWidget(new QLabel("Počet otázek:"));
-    hTop->addWidget(m_spinStudentCount);
+    hTop->addWidget(mSpinStudentCount);
     hTop->addStretch();
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
     rightLayout->addLayout(hTop);
-    rightLayout->addWidget(m_lblStudentProgress);
-    rightLayout->addWidget(m_lblStudentQuestion);
-    rightLayout->addWidget(m_widgetStudentAnswers);
+    rightLayout->addWidget(mLblStudentProgress);
+    rightLayout->addWidget(mLblStudentQuestion);
+    rightLayout->addWidget(mWidgetStudentAnswers);
     QHBoxLayout *btns = new QHBoxLayout;
-    btns->addWidget(m_btnStudentNext);
-    btns->addWidget(m_btnStudentSubmit);
+    btns->addWidget(mBtnStudentNext);
+    btns->addWidget(mBtnStudentSubmit);
     rightLayout->addLayout(btns);
-    rightLayout->addWidget(m_editStudentEmail);
+    rightLayout->addWidget(mEditStudentEmail);
     rightLayout->addStretch(1);
 
     QWidget *rightWidget = new QWidget; rightWidget->setLayout(rightLayout);
@@ -236,8 +236,8 @@ void MainWindow::buildStudentUi()
     mainLayout->addWidget(split);
     central->setLayout(mainLayout);
 
-    connect(m_btnStudentNext, &QPushButton::clicked, this, &MainWindow::onStudentNext);
-    connect(m_btnStudentSubmit, &QPushButton::clicked, this, &MainWindow::onStudentSubmit);
+    connect(mBtnStudentNext, &QPushButton::clicked, this, &MainWindow::onStudentNext);
+    connect(mBtnStudentSubmit, &QPushButton::clicked, this, &MainWindow::onStudentSubmit);
 }
 
 /* -----------------------------
@@ -245,24 +245,24 @@ void MainWindow::buildStudentUi()
    ----------------------------*/
 void MainWindow::refreshTestList()
 {
-    if (!m_listTests) return;
-    m_listTests->clear();
-    for (const Test &t : m_tests) {
-        m_listTests->addItem(t.name);
+    if (!mListTests) return;
+    mListTests->clear();
+    for (const Test &t : mTests) {
+        mListTests->addItem(t.name);
     }
-    if (!m_teacherMode && !m_tests.isEmpty()) {
+    if (!mTeacherMode && !mTests.isEmpty()) {
         // select first test by default for student
-        m_listTests->setCurrentRow(0);
+        mListTests->setCurrentRow(0);
     }
 }
 
 void MainWindow::refreshQuestionList()
 {
-    m_listQuestions->clear();
-    for (const Question &q : m_questions) {
+    mListQuestions->clear();
+    for (const Question &q : mQuestions) {
         QString label = q.text;
         if (label.length() > 80) label = label.left(77) + "...";
-        m_listQuestions->addItem(label);
+        mListQuestions->addItem(label);
     }
 }
 
@@ -280,47 +280,47 @@ void MainWindow::onAddTest()
     if (!DBManager::instance().addOrUpdateTest(t, &err)) {
         QMessageBox::warning(this, "Chyba při ukládání testu", err);
     } else {
-        m_tests.append(t);
+        mTests.append(t);
         refreshTestList();
-        int idx = m_listTests->count()-1;
-        m_listTests->setCurrentRow(idx);
-        m_editTestName->setText(t.name);
-        m_editTestDescription->setText(t.description);
+        int idx = mListTests->count()-1;
+        mListTests->setCurrentRow(idx);
+        mEditTestName->setText(t.name);
+        mEditTestDescription->setText(t.description);
     }
 }
 
 // Implemented slot: remove currently selected test
 void MainWindow::onRemoveTest()
 {
-    int idx = m_listTests->currentRow();
-    if (idx < 0 || idx >= m_tests.size()) return;
-    QString testId = m_tests[idx].id;
+    int idx = mListTests->currentRow();
+    if (idx < 0 || idx >= mTests.size()) return;
+    QString testId = mTests[idx].id;
     QString err;
     if (!DBManager::instance().removeTest(testId, &err)) {
         QMessageBox::warning(this, "Chyba při mazání testu z DB", err);
         return;
     }
-    m_tests.removeAt(idx);
+    mTests.removeAt(idx);
     refreshTestList();
     // clear editor if in teacher mode
-    if (m_teacherMode) {
-        m_listQuestions->clear();
-        m_editTestName->clear();
-        m_editTestDescription->clear();
-        m_questions.clear();
+    if (mTeacherMode) {
+        mListQuestions->clear();
+        mEditTestName->clear();
+        mEditTestDescription->clear();
+        mQuestions.clear();
     }
 }
 
 void MainWindow::onAddQuestion()
 {
-    int tidx = m_listTests->currentRow();
+    int tidx = mListTests->currentRow();
     if (tidx < 0) {
         QMessageBox::warning(this, "Žádný test", "Nejprve vyberte nebo vytvořte test.");
         return;
     }
     Question q;
     q.id = QUuid::createUuid().toString();
-    q.testId = m_tests[tidx].id;
+    q.testId = mTests[tidx].id;
     q.text = "Nová otázka";
     q.type = QuestionType::SingleChoice;
     q.options = { Answer{"Možnost 1", true}, Answer{"Možnost 2", false} };
@@ -332,85 +332,85 @@ void MainWindow::onAddQuestion()
     }
 
     // add locally and refresh
-    m_questions.append(q);
+    mQuestions.append(q);
     refreshQuestionList();
-    m_listQuestions->setCurrentRow(m_questions.size()-1);
+    mListQuestions->setCurrentRow(mQuestions.size()-1);
 }
 
 void MainWindow::onRemoveQuestion()
 {
-    int row = m_listQuestions->currentRow();
-    if (row < 0 || row >= m_questions.size()) return;
-    QString qid = m_questions[row].id;
+    int row = mListQuestions->currentRow();
+    if (row < 0 || row >= mQuestions.size()) return;
+    QString qid = mQuestions[row].id;
     QString err;
     if (!DBManager::instance().removeQuestion(qid, &err)) {
         QMessageBox::warning(this, "Chyba mazání otázky", err);
         return;
     }
-    m_questions.removeAt(row);
+    mQuestions.removeAt(row);
     refreshQuestionList();
-    if (!m_questions.isEmpty()) m_listQuestions->setCurrentRow(qMin(row, m_questions.size()-1));
+    if (!mQuestions.isEmpty()) mListQuestions->setCurrentRow(qMin(row, mQuestions.size()-1));
     else {
-        m_editQuestionText->clear();
-        m_tblAnswers->setRowCount(0);
-        m_editExpectedText->clear();
+        mEditQuestionText->clear();
+        mTblAnswers->setRowCount(0);
+        mEditExpectedText->clear();
     }
 }
 
 void MainWindow::onQuestionSelected(int row)
 {
-    if (row < 0 || row >= m_questions.size()) return;
+    if (row < 0 || row >= mQuestions.size()) return;
     loadQuestionIntoEditor(row);
 }
 
 void MainWindow::loadQuestionIntoEditor(int index)
 {
-    if (index < 0 || index >= m_questions.size()) return;
-    const Question &q = m_questions[index];
-    m_editQuestionText->setPlainText(q.text);
-    m_comboType->setCurrentIndex(static_cast<int>(q.type));
-    m_tblAnswers->setRowCount(0);
+    if (index < 0 || index >= mQuestions.size()) return;
+    const Question &q = mQuestions[index];
+    mEditQuestionText->setPlainText(q.text);
+    mComboType->setCurrentIndex(static_cast<int>(q.type));
+    mTblAnswers->setRowCount(0);
     for (const Answer &a : q.options) {
-        int r = m_tblAnswers->rowCount();
-        m_tblAnswers->insertRow(r);
+        int r = mTblAnswers->rowCount();
+        mTblAnswers->insertRow(r);
         QTableWidgetItem *t = new QTableWidgetItem(a.text);
-        m_tblAnswers->setItem(r, 0, t);
+        mTblAnswers->setItem(r, 0, t);
         QTableWidgetItem *c = new QTableWidgetItem;
         c->setFlags(c->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
         c->setCheckState(a.correct ? Qt::Checked : Qt::Unchecked);
-        m_tblAnswers->setItem(r, 1, c);
+        mTblAnswers->setItem(r, 1, c);
     }
-    m_editExpectedText->setText(q.expectedText);
+    mEditExpectedText->setText(q.expectedText);
     onTypeChanged(static_cast<int>(q.type));
 }
 
 void MainWindow::onTypeChanged(int idx)
 {
     bool isChoice = (idx == 0 || idx == 1);
-    m_tblAnswers->setEnabled(isChoice);
-    m_btnAddAnswer->setEnabled(isChoice);
-    m_btnRemoveAnswer->setEnabled(isChoice);
-    m_editExpectedText->setEnabled(idx == 2);
+    mTblAnswers->setEnabled(isChoice);
+    mBtnAddAnswer->setEnabled(isChoice);
+    mBtnRemoveAnswer->setEnabled(isChoice);
+    mEditExpectedText->setEnabled(idx == 2);
     scheduleAutoSave();
 }
 
 void MainWindow::onAddAnswer()
 {
-    int r = m_tblAnswers->rowCount();
-    m_tblAnswers->insertRow(r);
-    m_tblAnswers->setItem(r, 0, new QTableWidgetItem(QString("Nová možnost %1").arg(r+1)));
+    int r = mTblAnswers->rowCount();
+    mTblAnswers->insertRow(r);
+    mTblAnswers->setItem(r, 0, new QTableWidgetItem(QString("Nová možnost %1").arg(r+1)));
     QTableWidgetItem *c = new QTableWidgetItem;
     c->setFlags(c->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     c->setCheckState(Qt::Unchecked);
-    m_tblAnswers->setItem(r, 1, c);
+    mTblAnswers->setItem(r, 1, c);
     scheduleAutoSave();
 }
 
 void MainWindow::onRemoveAnswer()
 {
-    int r = m_tblAnswers->currentRow();
+    int r = mTblAnswers->currentRow();
     if (r >= 0) {
-        m_tblAnswers->removeRow(r);
+        mTblAnswers->removeRow(r);
         scheduleAutoSave();
     }
 }
@@ -421,21 +421,21 @@ void MainWindow::onRemoveAnswer()
 void MainWindow::scheduleAutoSave()
 {
     // restart timer
-    m_autoSaveTimer.start();
+    mAutoSaveTimer.start();
 }
 
 void MainWindow::doAutoSave()
 {
     // determine current selected question and persist to DB
-    int qidx = m_listQuestions ? m_listQuestions->currentRow() : -1;
-    if (m_teacherMode && qidx >= 0 && qidx < m_questions.size()) {
+    int qidx = mListQuestions ? mListQuestions->currentRow() : -1;
+    if (mTeacherMode && qidx >= 0 && qidx < mQuestions.size()) {
         collectEditorToQuestion(qidx);
         QString err;
-        if (!DBManager::instance().addOrUpdateQuestion(m_questions[qidx], &err)) {
+        if (!DBManager::instance().addOrUpdateQuestion(mQuestions[qidx], &err)) {
             QMessageBox::warning(this, "Chyba při auto-ukládání otázky", err);
         } else {
             refreshQuestionList();
-            m_listQuestions->setCurrentRow(qidx);
+            mListQuestions->setCurrentRow(qidx);
         }
     }
 }
@@ -443,20 +443,20 @@ void MainWindow::doAutoSave()
 /* collect editor fields into question model */
 void MainWindow::collectEditorToQuestion(int index)
 {
-    if (index < 0 || index >= m_questions.size()) return;
-    Question &q = m_questions[index];
-    q.text = m_editQuestionText->toPlainText();
-    q.type = static_cast<QuestionType>(m_comboType->currentIndex());
+    if (index < 0 || index >= mQuestions.size()) return;
+    Question &q = mQuestions[index];
+    q.text = mEditQuestionText->toPlainText();
+    q.type = static_cast<QuestionType>(mComboType->currentIndex());
     q.options.clear();
-    for (int r = 0; r < m_tblAnswers->rowCount(); ++r) {
-        QTableWidgetItem *t = m_tblAnswers->item(r, 0);
-        QTableWidgetItem *c = m_tblAnswers->item(r, 1);
+    for (int r = 0; r < mTblAnswers->rowCount(); ++r) {
+        QTableWidgetItem *t = mTblAnswers->item(r, 0);
+        QTableWidgetItem *c = mTblAnswers->item(r, 1);
         Answer a;
         a.text = t ? t->text() : QString();
         a.correct = (c && c->checkState() == Qt::Checked);
         q.options.append(a);
     }
-    q.expectedText = m_editExpectedText->text();
+    q.expectedText = mEditExpectedText->text();
 }
 
 /* -----------------------------
@@ -465,40 +465,40 @@ void MainWindow::collectEditorToQuestion(int index)
 void MainWindow::onTestSelected(int idx)
 {
     // This slot is used in both modes: teacher list selection and student selection.
-    if (m_teacherMode) {
+    if (mTeacherMode) {
         // load test metadata and questions for teacher editor
-        if (idx < 0 || idx >= m_tests.size()) {
-            m_editTestName->clear();
-            m_editTestDescription->clear();
-            m_questions.clear();
+        if (idx < 0 || idx >= mTests.size()) {
+            mEditTestName->clear();
+            mEditTestDescription->clear();
+            mQuestions.clear();
             refreshQuestionList();
             return;
         }
-        const Test &t = m_tests[idx];
-        m_editTestName->setText(t.name);
-        m_editTestDescription->setText(t.description);
+        const Test &t = mTests[idx];
+        mEditTestName->setText(t.name);
+        mEditTestDescription->setText(t.description);
 
         // load questions for this test from DB
         QString err;
         QVector<Question> loaded;
         if (!DBManager::instance().loadQuestionsForTest(t.id, loaded, &err)) {
             QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
-            m_questions.clear();
+            mQuestions.clear();
         } else {
-            m_questions = std::move(loaded);
+            mQuestions = std::move(loaded);
         }
         refreshQuestionList();
-        if (!m_questions.isEmpty()) m_listQuestions->setCurrentRow(0);
+        if (!mQuestions.isEmpty()) mListQuestions->setCurrentRow(0);
         return;
     }
 
     // Student mode: when selecting a test, load questions and start test inline
-    if (idx < 0 || idx >= m_tests.size()) {
-        m_studentQuestions.clear();
-        m_studentAnswers.clear();
-        m_lblStudentProgress->clear();
-        m_lblStudentQuestion->clear();
-        QLayout *l = m_widgetStudentAnswers->layout();
+    if (idx < 0 || idx >= mTests.size()) {
+        mStudentQuestions.clear();
+        mStudentAnswers.clear();
+        mLblStudentProgress->clear();
+        mLblStudentQuestion->clear();
+        QLayout *l = mWidgetStudentAnswers->layout();
         QLayoutItem *it;
         while ((it = l->takeAt(0)) != nullptr) {
             if (it->widget()) it->widget()->deleteLater();
@@ -507,52 +507,52 @@ void MainWindow::onTestSelected(int idx)
         return;
     }
 
-    QString tid = m_tests[idx].id;
+    QString tid = mTests[idx].id;
     QString err;
-    if (!DBManager::instance().loadQuestionsForTest(tid, m_studentQuestions, &err)) {
+    if (!DBManager::instance().loadQuestionsForTest(tid, mStudentQuestions, &err)) {
         QMessageBox::warning(this, "Chyba při načítání otázek", err);
         return;
     }
     // prepare randomized subset
-    int count = m_spinStudentCount->value();
-    if (m_studentQuestions.size() > count) {
-        std::shuffle(m_studentQuestions.begin(), m_studentQuestions.end(), *QRandomGenerator::global());
-        m_studentQuestions.resize(count);
+    int count = mSpinStudentCount->value();
+    if (mStudentQuestions.size() > count) {
+        std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
+        mStudentQuestions.resize(count);
     }
-    m_studentCurrentIndex = 0;
-    m_studentAnswers.clear();
-    m_studentAnswers.resize(m_studentQuestions.size());
+    mStudentCurrentIndex = 0;
+    mStudentAnswers.clear();
+    mStudentAnswers.resize(mStudentQuestions.size());
     // show first question
-    if (!m_studentQuestions.isEmpty()) {
+    if (!mStudentQuestions.isEmpty()) {
         showStudentQuestion(0);
     }
 }
 
 void MainWindow::showStudentQuestion(int index)
 {
-    if (index < 0 || index >= m_studentQuestions.size()) return;
-    m_studentCurrentIndex = index;
-    const Question &q = m_studentQuestions[index];
-    m_lblStudentProgress->setText(QString("Otázka %1 / %2").arg(index+1).arg(m_studentQuestions.size()));
-    m_lblStudentQuestion->setText(q.text);
+    if (index < 0 || index >= mStudentQuestions.size()) return;
+    mStudentCurrentIndex = index;
+    const Question &q = mStudentQuestions[index];
+    mLblStudentProgress->setText(QString("Otázka %1 / %2").arg(index+1).arg(mStudentQuestions.size()));
+    mLblStudentQuestion->setText(q.text);
 
     // clear previous answer widgets
-    QLayout *lay = m_widgetStudentAnswers->layout();
+    QLayout *lay = mWidgetStudentAnswers->layout();
     QLayoutItem *child;
     while ((child = lay->takeAt(0)) != nullptr) {
         if (child->widget()) child->widget()->deleteLater();
         delete child;
     }
-    m_currentAnswerWidgets.clear();
+    mCurrentAnswerWidgets.clear();
 
     // get stored student answer for this index
-    QString stored = m_studentAnswers.value(index);
+    QString stored = mStudentAnswers.value(index);
 
     if (q.type == QuestionType::TextAnswer) {
         QLineEdit *le = new QLineEdit;
         if (!stored.isEmpty()) le->setText(stored);
         lay->addWidget(le);
-        m_currentAnswerWidgets.append(le);
+        mCurrentAnswerWidgets.append(le);
     } else {
         int m = q.options.size();
         QVector<int> indices;
@@ -568,7 +568,7 @@ void MainWindow::showStudentQuestion(int index)
                 if (!stored.isEmpty() && stored == q.options[origIdx].text) rb->setChecked(true);
                 lay->addWidget(rb);
                 grp->addButton(rb, origIdx);
-                m_currentAnswerWidgets.append(rb);
+                mCurrentAnswerWidgets.append(rb);
             }
         } else {
             QStringList presel = stored.split(";", Qt::SkipEmptyParts);
@@ -577,7 +577,7 @@ void MainWindow::showStudentQuestion(int index)
                 QCheckBox *cb = new QCheckBox(q.options[origIdx].text);
                 for (QString s : presel) if (s.trimmed() == q.options[origIdx].text) cb->setChecked(true);
                 lay->addWidget(cb);
-                m_currentAnswerWidgets.append(cb);
+                mCurrentAnswerWidgets.append(cb);
             }
         }
     }
@@ -586,33 +586,33 @@ void MainWindow::showStudentQuestion(int index)
 /* Student navigation */
 void MainWindow::onStudentNext()
 {
-    if (m_studentCurrentIndex < 0 || m_studentCurrentIndex >= m_studentQuestions.size()) return;
+    if (mStudentCurrentIndex < 0 || mStudentCurrentIndex >= mStudentQuestions.size()) return;
 
     // save current answer into m_studentAnswers
-    const Question &curQ = m_studentQuestions[m_studentCurrentIndex];
+    const Question &curQ = mStudentQuestions[mStudentCurrentIndex];
     if (curQ.type == QuestionType::TextAnswer) {
-        QLineEdit *le = qobject_cast<QLineEdit*>(m_currentAnswerWidgets.isEmpty() ? nullptr : m_currentAnswerWidgets.first());
-        m_studentAnswers[m_studentCurrentIndex] = le ? le->text().trimmed() : QString();
+        QLineEdit *le = qobject_cast<QLineEdit*>(mCurrentAnswerWidgets.isEmpty() ? nullptr : mCurrentAnswerWidgets.first());
+        mStudentAnswers[mStudentCurrentIndex] = le ? le->text().trimmed() : QString();
     } else if (curQ.type == QuestionType::SingleChoice) {
         QString chosen;
-        for (QWidget *w : m_currentAnswerWidgets) {
+        for (QWidget *w : mCurrentAnswerWidgets) {
             QRadioButton *rb = qobject_cast<QRadioButton*>(w);
             if (!rb) continue;
             if (rb->isChecked()) { chosen = rb->text(); break; }
         }
-        m_studentAnswers[m_studentCurrentIndex] = chosen;
+        mStudentAnswers[mStudentCurrentIndex] = chosen;
     } else {
         QStringList sel;
-        for (QWidget *w : m_currentAnswerWidgets) {
+        for (QWidget *w : mCurrentAnswerWidgets) {
             QCheckBox *cb = qobject_cast<QCheckBox*>(w);
             if (!cb) continue;
             if (cb->isChecked()) sel.append(cb->text());
         }
-        m_studentAnswers[m_studentCurrentIndex] = sel.join("; ");
+        mStudentAnswers[mStudentCurrentIndex] = sel.join("; ");
     }
 
-    if (m_studentCurrentIndex + 1 < m_studentQuestions.size()) {
-        showStudentQuestion(m_studentCurrentIndex + 1);
+    if (mStudentCurrentIndex + 1 < mStudentQuestions.size()) {
+        showStudentQuestion(mStudentCurrentIndex + 1);
     } else {
         QMessageBox::information(this, "Konec", "Došli jste na konec testu. Klikněte Odevzdat pro vyhodnocení.");
     }
@@ -622,37 +622,37 @@ void MainWindow::onStudentNext()
 void MainWindow::onStudentSubmit()
 {
     // save current answer
-    if (m_studentCurrentIndex >=0 && m_studentCurrentIndex < m_studentQuestions.size()) {
-        const Question &curQ = m_studentQuestions[m_studentCurrentIndex];
+    if (mStudentCurrentIndex >=0 && mStudentCurrentIndex < mStudentQuestions.size()) {
+        const Question &curQ = mStudentQuestions[mStudentCurrentIndex];
         if (curQ.type == QuestionType::TextAnswer) {
-            QLineEdit *le = qobject_cast<QLineEdit*>(m_currentAnswerWidgets.isEmpty() ? nullptr : m_currentAnswerWidgets.first());
-            m_studentAnswers[m_studentCurrentIndex] = le ? le->text().trimmed() : QString();
+            QLineEdit *le = qobject_cast<QLineEdit*>(mCurrentAnswerWidgets.isEmpty() ? nullptr : mCurrentAnswerWidgets.first());
+            mStudentAnswers[mStudentCurrentIndex] = le ? le->text().trimmed() : QString();
         } else if (curQ.type == QuestionType::SingleChoice) {
             QString chosen;
-            for (QWidget *w : m_currentAnswerWidgets) {
+            for (QWidget *w : mCurrentAnswerWidgets) {
                 QRadioButton *rb = qobject_cast<QRadioButton*>(w);
                 if (!rb) continue;
                 if (rb->isChecked()) { chosen = rb->text(); break; }
             }
-            m_studentAnswers[m_studentCurrentIndex] = chosen;
+            mStudentAnswers[mStudentCurrentIndex] = chosen;
         } else {
             QStringList sel;
-            for (QWidget *w : m_currentAnswerWidgets) {
+            for (QWidget *w : mCurrentAnswerWidgets) {
                 QCheckBox *cb = qobject_cast<QCheckBox*>(w);
                 if (!cb) continue;
                 if (cb->isChecked()) sel.append(cb->text());
             }
-            m_studentAnswers[m_studentCurrentIndex] = sel.join("; ");
+            mStudentAnswers[mStudentCurrentIndex] = sel.join("; ");
         }
     }
 
     // Evaluate
     double totalScore = 0.0;
     QVector<DBManager::ResultDetail> details;
-    for (int i = 0; i < m_studentQuestions.size(); ++i) {
-        const Question &q = m_studentQuestions[i];
+    for (int i = 0; i < mStudentQuestions.size(); ++i) {
+        const Question &q = mStudentQuestions[i];
         bool correct = false;
-        QString ua = m_studentAnswers.value(i);
+        QString ua = mStudentAnswers.value(i);
         if (q.type == QuestionType::TextAnswer) {
             QString given = ua.trimmed();
             QString expected = q.expectedText.trimmed(); // original expected from DB
@@ -692,21 +692,21 @@ void MainWindow::onStudentSubmit()
         details.append(rd);
     }
 
-    QString email = m_editStudentEmail ? m_editStudentEmail->text().trimmed() : QString();
+    QString email = mEditStudentEmail ? mEditStudentEmail->text().trimmed() : QString();
     QString err;
     // save result with test id
     QString tid = currentTestId();
-    if (!DBManager::instance().saveResult(email, tid, totalScore, m_studentQuestions.size(), details, &err)) {
+    if (!DBManager::instance().saveResult(email, tid, totalScore, mStudentQuestions.size(), details, &err)) {
         QMessageBox::warning(this, "Chyba ukládání výsledku", err);
     } else {
-        QMessageBox::information(this, "Výsledek", QString("Skóre: %1 / %2\nVýsledek uložen.").arg(totalScore).arg(m_studentQuestions.size()));
+        QMessageBox::information(this, "Výsledek", QString("Skóre: %1 / %2\nVýsledek uložen.").arg(totalScore).arg(mStudentQuestions.size()));
     }
 }
 
 /* Optional slot used to start test programmatically (kept because header declares it) */
 void MainWindow::onStudentStartTest()
 {
-    if (!m_teacherMode) {
+    if (!mTeacherMode) {
         int idx = currentTestIndex();
         if (idx >= 0) {
             onTestSelected(idx); // will load and show first question

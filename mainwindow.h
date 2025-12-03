@@ -58,43 +58,43 @@ private:
     void showStudentQuestion(int index);
 
     // data
-    bool m_teacherMode;
-    QVector<Test> m_tests;
-    QVector<Question> m_questions; // in teacher mode: questions for selected test
-    QVector<Question> m_studentQuestions; // in student mode: current test questions
-    QVector<QString> m_studentAnswers; // per-student answers (parallel to m_studentQuestions)
-    int m_studentCurrentIndex = 0;
+    bool mTeacherMode;
+    QVector<Test> mTests;
+    QVector<Question> mQuestions; // in teacher mode: questions for selected test
+    QVector<Question> mStudentQuestions; // in student mode: current test questions
+    QVector<QString> mStudentAnswers; // per-student answers (parallel to m_studentQuestions)
+    int mStudentCurrentIndex = 0;
 
     // AUTO SAVE timer (debounce)
-    QTimer m_autoSaveTimer;
+    QTimer mAutoSaveTimer;
 
     // Teacher widgets
-    QListWidget *m_listTests; // also used in student mode as test selector
-    QLineEdit *m_editTestName;
-    QLineEdit *m_editTestDescription;
-    QListWidget *m_listQuestions;
-    QTextEdit *m_editQuestionText;
-    QComboBox *m_comboType;
-    QTableWidget *m_tblAnswers;
-    QPushButton *m_btnAddTest;
-    QPushButton *m_btnRemoveTest;
-    QPushButton *m_btnAddQuestion;
-    QPushButton *m_btnRemoveQuestion;
-    QPushButton *m_btnAddAnswer;
-    QPushButton *m_btnRemoveAnswer;
-    QLineEdit *m_editExpectedText;
+    QListWidget *mListTests; // also used in student mode as test selector
+    QLineEdit *mEditTestName;
+    QLineEdit *mEditTestDescription;
+    QListWidget *mListQuestions;
+    QTextEdit *mEditQuestionText;
+    QComboBox *mComboType;
+    QTableWidget *mTblAnswers;
+    QPushButton *mBtnAddTest;
+    QPushButton *mBtnRemoveTest;
+    QPushButton *mBtnAddQuestion;
+    QPushButton *mBtnRemoveQuestion;
+    QPushButton *mBtnAddAnswer;
+    QPushButton *mBtnRemoveAnswer;
+    QLineEdit *mEditExpectedText;
 
     // Student widgets (right side)
-    QLabel *m_lblStudentProgress;
-    QLabel *m_lblStudentQuestion;
-    QWidget *m_widgetStudentAnswers; // placeholder layout for dynamic widgets
-    QPushButton *m_btnStudentNext;
-    QPushButton *m_btnStudentSubmit;
-    QLineEdit *m_editStudentEmail;
-    QSpinBox *m_spinStudentCount;
+    QLabel *mLblStudentProgress;
+    QLabel *mLblStudentQuestion;
+    QWidget *mWidgetStudentAnswers; // placeholder layout for dynamic widgets
+    QPushButton *mBtnStudentNext;
+    QPushButton *mBtnStudentSubmit;
+    QLineEdit *mEditStudentEmail;
+    QSpinBox *mSpinStudentCount;
 
     // helper to build answer widgets (used for both modes)
-    QList<QWidget*> m_currentAnswerWidgets;
+    QList<QWidget*> mCurrentAnswerWidgets;
 
     // track current selected test id (for teacher/student)
     QString currentTestId() const;

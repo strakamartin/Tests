@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    // detect teacher mode by presence of "-u" parameter (as requested)
+    // detect teacher mode by presence of "-u" parameter
     QStringList args = a.arguments();
     bool teacherMode = args.contains(QStringLiteral("-u"));
 
