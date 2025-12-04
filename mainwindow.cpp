@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "dbmanager.h"
 #include "testrunner.h"
+#include "customtextedit.h"
 
 #include <QListWidget>
 #include <QPushButton>
@@ -73,13 +74,18 @@ void MainWindow::buildTeacherUi()
 
     // Left: tests + test metadata + questions list
     mListTests = new QListWidget;
+    mListTests->setMaximumHeight(95);
     mBtnAddTest = new QPushButton("Přidat test");
     mBtnRemoveTest = new QPushButton("Odstranit test");
     mEditTestName = new QLineEdit;
     mEditTestName->setPlaceholderText("Název testu");
     mEditTestDescription = new QLineEdit;
     mEditTestDescription->setPlaceholderText("Popis testu");
+    mListQuestions = new QListWidget;
+    mBtnAddQuestion = new QPushButton("Přidat otázku");
+    mBtnRemoveQuestion = new QPushButton("Odstranit otázku");
 
+    // Tests list
     QHBoxLayout *testTop = new QHBoxLayout;
     testTop->addWidget(mBtnAddTest);
     testTop->addWidget(mBtnRemoveTest);
@@ -91,11 +97,16 @@ void MainWindow::buildTeacherUi()
     leftLayout->addWidget(mEditTestName);
     leftLayout->addWidget(mEditTestDescription);
 
+    // Questions list
+    leftLayout->addWidget(new QLabel("Otázky:"));
+    leftLayout->addWidget(mListQuestions);
+    QHBoxLayout *qBtns = new QHBoxLayout;
+    qBtns->addWidget(mBtnAddQuestion);
+    qBtns->addWidget(mBtnRemoveQuestion);
+    leftLayout->addLayout(qBtns);
+//********************right ***************************************
     // Question editor on right
-    mListQuestions = new QListWidget;
-    mBtnAddQuestion = new QPushButton("Přidat otázku");
-    mBtnRemoveQuestion = new QPushButton("Odstranit otázku");
-    mEditQuestionText = new QTextEdit;
+    mEditQuestionText = new CustomTextEdit;
     mComboType = new QComboBox;
     mComboType->addItem("Jedna správná");
     mComboType->addItem("Více správných");
@@ -108,12 +119,6 @@ void MainWindow::buildTeacherUi()
     mEditExpectedText = new QLineEdit;
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
-    rightLayout->addWidget(new QLabel("Otázky:"));
-    rightLayout->addWidget(mListQuestions);
-    QHBoxLayout *qBtns = new QHBoxLayout;
-    qBtns->addWidget(mBtnAddQuestion);
-    qBtns->addWidget(mBtnRemoveQuestion);
-    rightLayout->addLayout(qBtns);
     rightLayout->addWidget(new QLabel("Text otázky:"));
     rightLayout->addWidget(mEditQuestionText);
     rightLayout->addWidget(new QLabel("Typ otázky:"));
@@ -152,6 +157,7 @@ void MainWindow::buildTeacherUi()
         QString err;
         DBManager::instance().addOrUpdateTest(mTests[idx], &err);
         refreshTestList();
+        mListTests->setCurrentRow(idx);
     });
     connect(mEditTestDescription, &QLineEdit::editingFinished, this, [this](){
         int idx = mListTests->currentRow();
@@ -169,7 +175,8 @@ void MainWindow::buildTeacherUi()
     connect(mBtnRemoveAnswer, &QPushButton::clicked, this, &MainWindow::onRemoveAnswer);
 
     // auto-save triggers (debounced)
-    connect(mEditQuestionText, &QTextEdit::textChanged, this, &MainWindow::scheduleAutoSave);
+   // connect(mEditQuestionText, &QTextEdit::textChanged, this, &MainWindow::scheduleAutoSave);
+    connect(mEditQuestionText, &CustomTextEdit::editingFinished, this, &MainWindow::doAutoSaveWithRefresh);
     connect(mEditExpectedText, &QLineEdit::textChanged, this, &MainWindow::scheduleAutoSave);
     connect(mTblAnswers, &QTableWidget::itemChanged, this, &MainWindow::scheduleAutoSave);
 }
@@ -273,7 +280,7 @@ void MainWindow::onAddTest()
 {
     Test t;
     t.id = QUuid::createUuid().toString();
-    t.name = "Novy test";
+    t.name = "Novy test1";
     t.description = "";
     // add to DB immediately
     QString err;
@@ -425,6 +432,22 @@ void MainWindow::scheduleAutoSave()
 }
 
 void MainWindow::doAutoSave()
+{
+    // determine current selected question and persist to DB
+    int qidx = mListQuestions ? mListQuestions->currentRow() : -1;
+    if (mTeacherMode && qidx >= 0 && qidx < mQuestions.size()) {
+        collectEditorToQuestion(qidx);
+        QString err;
+        if (!DBManager::instance().addOrUpdateQuestion(mQuestions[qidx], &err)) {
+            QMessageBox::warning(this, "Chyba při auto-ukládání otázky", err);
+        } else {
+            //refreshQuestionList();
+            //mListQuestions->setCurrentRow(qidx);
+        }
+    }
+}
+
+void MainWindow::doAutoSaveWithRefresh()
 {
     // determine current selected question and persist to DB
     int qidx = mListQuestions ? mListQuestions->currentRow() : -1;

@@ -6,6 +6,7 @@
 #include <QTimer>
 #include "models.h"
 
+class CustomTextEdit;
 class QListWidget;
 class QPushButton;
 class QTextEdit;
@@ -40,6 +41,7 @@ private slots:
     // auto-save
     void scheduleAutoSave();
     void doAutoSave();
+    void doAutoSaveWithRefresh();
 
     // student-specific
     void onStudentStartTest();
@@ -69,17 +71,22 @@ private:
     QTimer mAutoSaveTimer;
 
     // Teacher widgets
+    //tests widgets
     QListWidget *mListTests; // also used in student mode as test selector
     QLineEdit *mEditTestName;
     QLineEdit *mEditTestDescription;
-    QListWidget *mListQuestions;
-    QTextEdit *mEditQuestionText;
-    QComboBox *mComboType;
-    QTableWidget *mTblAnswers;
     QPushButton *mBtnAddTest;
     QPushButton *mBtnRemoveTest;
+
+    // questions widgets
+    QListWidget *mListQuestions;
+    CustomTextEdit *mEditQuestionText;
     QPushButton *mBtnAddQuestion;
     QPushButton *mBtnRemoveQuestion;
+
+    // answer editor widgets
+    QComboBox *mComboType;
+    QTableWidget *mTblAnswers;
     QPushButton *mBtnAddAnswer;
     QPushButton *mBtnRemoveAnswer;
     QLineEdit *mEditExpectedText;

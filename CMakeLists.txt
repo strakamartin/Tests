@@ -24,6 +24,7 @@ add_executable(QtTestMaker
     models.h
     testrunner.h
     README.md
+    customtextedit.h customtextedit.cpp
 )
 
 target_link_libraries(QtTestMaker PRIVATE
