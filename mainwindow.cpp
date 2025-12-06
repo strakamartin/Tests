@@ -174,11 +174,10 @@ void MainWindow::buildTeacherUi()
     connect(mBtnAddAnswer, &QPushButton::clicked, this, &MainWindow::onAddAnswer);
     connect(mBtnRemoveAnswer, &QPushButton::clicked, this, &MainWindow::onRemoveAnswer);
 
-    // auto-save triggers (debounced)
-   // connect(mEditQuestionText, &QTextEdit::textChanged, this, &MainWindow::scheduleAutoSave);
     connect(mEditQuestionText, &CustomTextEdit::editingFinished, this, &MainWindow::doAutoSaveWithRefresh);
+    // auto-save triggers (debounced)
     connect(mEditExpectedText, &QLineEdit::textChanged, this, &MainWindow::scheduleAutoSave);
-    connect(mTblAnswers, &QTableWidget::itemChanged, this, &MainWindow::scheduleAutoSave);
+    connect(mTblAnswers, &QTableWidget::itemChanged, this, &MainWindow::answerItemChanged);
 }
 
 void MainWindow::buildStudentUi()
@@ -431,36 +430,63 @@ void MainWindow::scheduleAutoSave()
     mAutoSaveTimer.start();
 }
 
-void MainWindow::doAutoSave()
+bool MainWindow::doAutoSave()
 {
     // determine current selected question and persist to DB
     int qidx = mListQuestions ? mListQuestions->currentRow() : -1;
     if (mTeacherMode && qidx >= 0 && qidx < mQuestions.size()) {
         collectEditorToQuestion(qidx);
         QString err;
-        if (!DBManager::instance().addOrUpdateQuestion(mQuestions[qidx], &err)) {
+        bool autosave = DBManager::instance().addOrUpdateQuestion(mQuestions[qidx], &err);
+        if (!autosave) {
             QMessageBox::warning(this, "Chyba při auto-ukládání otázky", err);
-        } else {
-            //refreshQuestionList();
-            //mListQuestions->setCurrentRow(qidx);
         }
+        return autosave;
     }
+    return false;
 }
 
 void MainWindow::doAutoSaveWithRefresh()
 {
-    // determine current selected question and persist to DB
+    if (doAutoSave()) {
+        // refresh question list to reflect any text changes
+        refreshQuestionList();
+        int qidx = mListQuestions ? mListQuestions->currentRow() : -1;
+        if (mListQuestions )
+            mListQuestions->setCurrentRow(qidx);
+    }
+}
+
+
+void MainWindow::answerItemChanged(QTableWidgetItem *item)
+{
     int qidx = mListQuestions ? mListQuestions->currentRow() : -1;
     if (mTeacherMode && qidx >= 0 && qidx < mQuestions.size()) {
-        collectEditorToQuestion(qidx);
-        QString err;
-        if (!DBManager::instance().addOrUpdateQuestion(mQuestions[qidx], &err)) {
-            QMessageBox::warning(this, "Chyba při auto-ukládání otázky", err);
-        } else {
-            refreshQuestionList();
-            mListQuestions->setCurrentRow(qidx);
+        QuestionType qt = static_cast<QuestionType>(mComboType->currentIndex());
+        if (qt == QuestionType::SingleChoice) {
+            // ensure only one checked
+            size_t counter = 0;
+            for (int r = 0; r < mTblAnswers->rowCount(); ++r) {
+                QTableWidgetItem *c = mTblAnswers->item(r, 1);
+                mTblAnswers->blockSignals(true);
+                if (c && c != item && item->column() == 1 &&
+                    item->checkState() == Qt::Checked &&
+                    c->checkState() == Qt::Checked) {
+                    c->setCheckState(Qt::Unchecked);
+                }
+                mTblAnswers->blockSignals(false);
+                if (c && c->checkState() == Qt::Checked)
+                    counter++;
+            }
+            if (counter == 0 && item->column() == 1) {
+                // prevent unchecking all in single-choice mode
+                mTblAnswers->blockSignals(true);
+                item->setCheckState(Qt::Checked);
+                mTblAnswers->blockSignals(false);
+            }
         }
     }
+    scheduleAutoSave();
 }
 
 /* collect editor fields into question model */

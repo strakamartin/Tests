@@ -12,6 +12,7 @@ class QPushButton;
 class QTextEdit;
 class QComboBox;
 class QTableWidget;
+class QTableWidgetItem;
 class QHeaderView;
 class QLineEdit;
 class QSpinBox;
@@ -38,9 +39,10 @@ private slots:
     void onAddAnswer();
     void onRemoveAnswer();
 
+    void answerItemChanged(QTableWidgetItem *item);
     // auto-save
     void scheduleAutoSave();
-    void doAutoSave();
+    bool doAutoSave();
     void doAutoSaveWithRefresh();
 
     // student-specific
