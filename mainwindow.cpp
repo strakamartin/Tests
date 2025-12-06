@@ -253,7 +253,7 @@ void MainWindow::refreshTestList()
 {
     if (!mListTests) return;
     mListTests->clear();
-    for (const Test &t : mTests) {
+for (auto &t : std::as_const(mTests)) {
         mListTests->addItem(t.name);
     }
     if (!mTeacherMode && !mTests.isEmpty()) {
@@ -265,7 +265,7 @@ void MainWindow::refreshTestList()
 void MainWindow::refreshQuestionList()
 {
     mListQuestions->clear();
-    for (const Question &q : mQuestions) {
+    for (const Question &q : std::as_const(mQuestions)) {
         QString label = q.text;
         if (label.length() > 80) label = label.left(77) + "...";
         mListQuestions->addItem(label);
@@ -624,7 +624,8 @@ void MainWindow::showStudentQuestion(int index)
             for (int i = 0; i < m; ++i) {
                 int origIdx = indices[i];
                 QCheckBox *cb = new QCheckBox(q.options[origIdx].text);
-                for (QString s : presel) if (s.trimmed() == q.options[origIdx].text) cb->setChecked(true);
+                for (const QString &s : std::as_const(presel))
+                    if (s.trimmed() == q.options[origIdx].text) cb->setChecked(true);
                 lay->addWidget(cb);
                 mCurrentAnswerWidgets.append(cb);
             }
@@ -644,7 +645,7 @@ void MainWindow::onStudentNext()
         mStudentAnswers[mStudentCurrentIndex] = le ? le->text().trimmed() : QString();
     } else if (curQ.type == QuestionType::SingleChoice) {
         QString chosen;
-        for (QWidget *w : mCurrentAnswerWidgets) {
+        for (QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
             QRadioButton *rb = qobject_cast<QRadioButton*>(w);
             if (!rb) continue;
             if (rb->isChecked()) { chosen = rb->text(); break; }
@@ -652,7 +653,7 @@ void MainWindow::onStudentNext()
         mStudentAnswers[mStudentCurrentIndex] = chosen;
     } else {
         QStringList sel;
-        for (QWidget *w : mCurrentAnswerWidgets) {
+        for (QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
             QCheckBox *cb = qobject_cast<QCheckBox*>(w);
             if (!cb) continue;
             if (cb->isChecked()) sel.append(cb->text());
@@ -678,7 +679,7 @@ void MainWindow::onStudentSubmit()
             mStudentAnswers[mStudentCurrentIndex] = le ? le->text().trimmed() : QString();
         } else if (curQ.type == QuestionType::SingleChoice) {
             QString chosen;
-            for (QWidget *w : mCurrentAnswerWidgets) {
+            for (QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
                 QRadioButton *rb = qobject_cast<QRadioButton*>(w);
                 if (!rb) continue;
                 if (rb->isChecked()) { chosen = rb->text(); break; }
@@ -686,7 +687,7 @@ void MainWindow::onStudentSubmit()
             mStudentAnswers[mStudentCurrentIndex] = chosen;
         } else {
             QStringList sel;
-            for (QWidget *w : mCurrentAnswerWidgets) {
+            for (QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
                 QCheckBox *cb = qobject_cast<QCheckBox*>(w);
                 if (!cb) continue;
                 if (cb->isChecked()) sel.append(cb->text());
