@@ -235,7 +235,7 @@ void Testrunner::onSubmit()
 
     QVector<DBManager::ResultDetail> details;
     double score = evaluateAndReturnScore(details);
-    QString msg = QString("Skóre: %1 / %2").arg(score).arg(mTestQuestions.size());
+    QString msg = QString("Skore: %1 / %2").arg(score).arg(mTestQuestions.size());
     QMessageBox::information(this, "Výsledek testu", msg);
 
     // Save result to DB (student email optional)
@@ -270,7 +270,7 @@ double Testrunner::evaluateAndReturnScore(QVector<DBManager::ResultDetail> &outD
             }
         } else if (q.type == QuestionType::SingleChoice) {
             // find which selected text is correct
-            ua = sa.selectedOptionsTexts.join("; ");
+            ua = sa.selectedOptionsTexts.join(";@ ");
             for (int oi = 0; oi < q.options.size(); ++oi) {
                 const Answer &a = q.options[oi];
                 if (a.correct) {
@@ -283,7 +283,7 @@ double Testrunner::evaluateAndReturnScore(QVector<DBManager::ResultDetail> &outD
             QStringList correctTexts;
             for (const Answer &a : q.options) if (a.correct) correctTexts.append(a.text);
             QStringList sel = sa.selectedOptionsTexts;
-            ua = sel.join("; ");
+            ua = sel.join(";@ ");
             // compare as sets
             auto normalize = [](QStringList l) {
                 for (QString &s : l) s = s.trimmed();
@@ -312,7 +312,7 @@ void Testrunner::onSendEmail()
     QVector<DBManager::ResultDetail> details;
     double score = evaluateAndReturnScore(details);
     QString body;
-    body += QString("Skóre: %1 / %2\n\n").arg(score).arg(mTestQuestions.size());
+    body += QString("Skore: %1 / %2\n\n").arg(score).arg(mTestQuestions.size());
     for (int i = 0; i < details.size(); ++i) {
         body += QString("Otázka %1: %2\n").arg(i+1).arg(details[i].correct ? "OK" : "Špatně");
         body += QString("Odpověď studenta: %1\n\n").arg(details[i].userAnswer);

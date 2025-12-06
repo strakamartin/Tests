@@ -39,7 +39,7 @@ MainWindow::MainWindow(bool teacherMode, QWidget *parent)
 
     // open DB (default path). Adjust path if you use custom filename/location.
     QString err;
-    QString dbPath = "questions.db";
+    QString dbPath = "../../questions.db";
     if (!DBManager::instance().openDatabase(dbPath, &err)) {
         QMessageBox::critical(this, "DB Error", err);
     }
@@ -605,7 +605,8 @@ void MainWindow::showStudentQuestion(int index)
     } else {
         int m = q.options.size();
         QVector<int> indices;
-        for (int i=0;i<m;++i) indices.append(i);
+        for (int i=0;i<m;++i)
+            indices.append(i);
         std::shuffle(indices.begin(), indices.end(), *QRandomGenerator::global());
 
         if (q.type == QuestionType::SingleChoice) {
@@ -620,7 +621,7 @@ void MainWindow::showStudentQuestion(int index)
                 mCurrentAnswerWidgets.append(rb);
             }
         } else {
-            QStringList presel = stored.split(";", Qt::SkipEmptyParts);
+            QStringList presel = stored.split(";@", Qt::SkipEmptyParts);
             for (int i = 0; i < m; ++i) {
                 int origIdx = indices[i];
                 QCheckBox *cb = new QCheckBox(q.options[origIdx].text);
@@ -658,7 +659,7 @@ void MainWindow::onStudentNext()
             if (!cb) continue;
             if (cb->isChecked()) sel.append(cb->text());
         }
-        mStudentAnswers[mStudentCurrentIndex] = sel.join("; ");
+        mStudentAnswers[mStudentCurrentIndex] = sel.join(";@ ");
     }
 
     if (mStudentCurrentIndex + 1 < mStudentQuestions.size()) {
@@ -692,7 +693,7 @@ void MainWindow::onStudentSubmit()
                 if (!cb) continue;
                 if (cb->isChecked()) sel.append(cb->text());
             }
-            mStudentAnswers[mStudentCurrentIndex] = sel.join("; ");
+            mStudentAnswers[mStudentCurrentIndex] = sel.join(";@ ");
         }
     }
 
@@ -722,8 +723,11 @@ void MainWindow::onStudentSubmit()
             }
         } else { // multiple
             QStringList correctTexts;
-            for (const Answer &a : q.options) if (a.correct) correctTexts.append(a.text);
-            QStringList sel = ua.split(";", Qt::SkipEmptyParts);
+            for (const Answer &a : q.options)
+                if (a.correct)
+                    correctTexts.append(a.text);
+
+            QStringList sel = ua.split(";@", Qt::SkipEmptyParts);
             auto normalize = [](QStringList l){
                 for (QString &s : l) s = s.trimmed();
                 std::sort(l.begin(), l.end());
@@ -749,7 +753,7 @@ void MainWindow::onStudentSubmit()
     if (!DBManager::instance().saveResult(email, tid, totalScore, mStudentQuestions.size(), details, &err)) {
         QMessageBox::warning(this, "Chyba ukládání výsledku", err);
     } else {
-        QMessageBox::information(this, "Výsledek", QString("Skóre: %1 / %2\nVýsledek uložen.").arg(totalScore).arg(mStudentQuestions.size()));
+        QMessageBox::information(this, "Výsledek", QString("Skore: %1 / %2\nVýsledek uložen.").arg(totalScore).arg(mStudentQuestions.size()));
     }
 }
 
