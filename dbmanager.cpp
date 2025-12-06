@@ -23,7 +23,7 @@ static bool execOrFail(QSqlQuery &qq, QString *err)
             QStringList names = qq.boundValueNames();
             if (!names.isEmpty()) {
                 details += "\nBound values (named):";
-                for (const QString &n : names) {
+                for (const QString &n : std::as_const(names)) {
                     QVariant v = qq.boundValue(n);
                     details += "\n  " + n + " = " + v.toString();
                 }

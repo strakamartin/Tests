@@ -191,13 +191,13 @@ void Testrunner::saveCurrentAnswerForIndex(int index)
             if (le) sa.textAnswer = le->text().trimmed();
         }
     } else if (q.type == QuestionType::SingleChoice) {
-        for (QWidget *w : mCurrentAnswerWidgets) {
+        for (const QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
             QRadioButton *rb = qobject_cast<QRadioButton*>(w);
             if (!rb) continue;
             if (rb->isChecked()) sa.selectedOptionsTexts.append(rb->text());
         }
     } else { // multiple
-        for (QWidget *w : mCurrentAnswerWidgets) {
+        for (const QWidget *w : std::as_const(mCurrentAnswerWidgets)) {
             QCheckBox *cb = qobject_cast<QCheckBox*>(w);
             if (!cb) continue;
             if (cb->isChecked()) sa.selectedOptionsTexts.append(cb->text());
