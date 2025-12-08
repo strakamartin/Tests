@@ -74,12 +74,13 @@ bool Testrunner::loadQuestionsFromDB()
         return false;
     }
     QString err;
-    QVector<Question> loaded;
-    if (!DBManager::instance().loadQuestionsForTest(mTestId, loaded, &err)) {
+    QVector<Question> loadedQuestions;
+    if (!DBManager::instance().loadQuestionsForTest(mTestId, loadedQuestions, &err)) {
         QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
         return false;
     }
-    mAllQuestions = std::move(loaded);
+
+    mAllQuestions = std::move(loadedQuestions);
     return true;
 }
 

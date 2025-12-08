@@ -529,12 +529,12 @@ void MainWindow::onTestSelected(int idx)
 
         // load questions for this test from DB
         QString err;
-        QVector<Question> loaded;
-        if (!DBManager::instance().loadQuestionsForTest(t.id, loaded, &err)) {
+        QVector<Question> loadedQuestions;
+        if (!DBManager::instance().loadQuestionsForTest(t.id, loadedQuestions, &err)) {
             QMessageBox::warning(this, "Chyba při načítání otázek z DB", err);
             mQuestions.clear();
         } else {
-            mQuestions = std::move(loaded);
+            mQuestions = std::move(loadedQuestions);
         }
         refreshQuestionList();
         if (!mQuestions.isEmpty()) mListQuestions->setCurrentRow(0);
@@ -562,10 +562,13 @@ void MainWindow::onTestSelected(int idx)
         QMessageBox::warning(this, "Chyba při načítání otázek", err);
         return;
     }
+
     // prepare randomized subset
+    std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
+
+    //TODO udelat nacitanie poctu otazke z db.
     int count = mSpinStudentCount->value();
     if (mStudentQuestions.size() > count) {
-        std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
         mStudentQuestions.resize(count);
     }
     mStudentCurrentIndex = 0;
