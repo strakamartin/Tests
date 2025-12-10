@@ -1,5 +1,0 @@
-/home/runner/work/Tests/Tests/_codeql_build_dir/CMakeFiles/QtTestMaker.dir
-/home/runner/work/Tests/Tests/_codeql_build_dir/CMakeFiles/edit_cache.dir
-/home/runner/work/Tests/Tests/_codeql_build_dir/CMakeFiles/rebuild_cache.dir
-/home/runner/work/Tests/Tests/_codeql_build_dir/CMakeFiles/QtTestMaker_autogen_timestamp_deps.dir
-/home/runner/work/Tests/Tests/_codeql_build_dir/CMakeFiles/QtTestMaker_autogen.dir
