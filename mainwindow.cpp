@@ -104,6 +104,17 @@ void MainWindow::buildTeacherUi()
     qBtns->addWidget(mBtnAddQuestion);
     qBtns->addWidget(mBtnRemoveQuestion);
     leftLayout->addLayout(qBtns);
+
+    // Number of questions in test of student(subset of all questions for the test)
+    mSpinStudentCount = new QSpinBox;
+    mSpinStudentCount->setMinimum(1);
+    mSpinStudentCount->setMaximum(1000);
+    mSpinStudentCount->setValue(10);
+
+    QHBoxLayout *hTop = new QHBoxLayout;
+    hTop->addWidget(new QLabel("Počet otázek pro studenta:"));
+    hTop->addWidget(mSpinStudentCount);
+    leftLayout->addLayout(hTop);
 //********************right ***************************************
     // Question editor on right
     mEditQuestionText = new CustomTextEdit;
@@ -191,6 +202,10 @@ void MainWindow::buildStudentUi()
     connect(mListTests, &QListWidget::currentRowChanged, this, &MainWindow::onTestSelected);
 
     QVBoxLayout *leftLayout = new QVBoxLayout;
+    mEditStudentEmail = new QLineEdit;
+    mEditStudentEmail->setPlaceholderText("Teacher E-mail");
+    leftLayout->addWidget(mEditStudentEmail);
+
     leftLayout->addWidget(new QLabel("Vyber test:"));
     leftLayout->addWidget(mListTests);
 
@@ -207,29 +222,18 @@ void MainWindow::buildStudentUi()
 
     mBtnStudentNext = new QPushButton("Další");
     mBtnStudentSubmit = new QPushButton("Odevzdat");
-    mEditStudentEmail = new QLineEdit;
-    mEditStudentEmail->setPlaceholderText("E-mail (volitelné)");
-    mSpinStudentCount = new QSpinBox;
-    mSpinStudentCount->setMinimum(1);
-    mSpinStudentCount->setMaximum(1000);
-    mSpinStudentCount->setValue(10);
-
-    QHBoxLayout *hTop = new QHBoxLayout;
-    hTop->addWidget(new QLabel("Počet otázek:"));
-    hTop->addWidget(mSpinStudentCount);
-    hTop->addStretch();
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
-    rightLayout->addLayout(hTop);
     rightLayout->addWidget(mLblStudentProgress);
     rightLayout->addWidget(mLblStudentQuestion);
     rightLayout->addWidget(mWidgetStudentAnswers);
     QHBoxLayout *btns = new QHBoxLayout;
     btns->addWidget(mBtnStudentNext);
-    btns->addWidget(mBtnStudentSubmit);
-    rightLayout->addLayout(btns);
-    rightLayout->addWidget(mEditStudentEmail);
+  //  btns->addWidget(mBtnStudentSubmit);
     rightLayout->addStretch(1);
+    rightLayout->addLayout(btns);
+    rightLayout->addWidget(mBtnStudentSubmit);
+
 
     QWidget *rightWidget = new QWidget; rightWidget->setLayout(rightLayout);
 
@@ -567,7 +571,7 @@ void MainWindow::onTestSelected(int idx)
     std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
 
     //TODO udelat nacitanie poctu otazke z db.
-    int count = mSpinStudentCount->value();
+    int count = 4;//mSpinStudentCount->value();
     if (mStudentQuestions.size() > count) {
         mStudentQuestions.resize(count);
     }
