@@ -228,7 +228,7 @@ bool DBManager::loadTests(QVector<Test> &outTests, QString *err)
         t.id = q.value(0).toString();
         t.name = q.value(1).toString();
         t.description = q.value(2).toString();
-        t.studentCount = q.value(3).toInt();
+        t.studentCount = q.value(3).isNull() ? 10 : q.value(3).toInt();
         outTests.append(t);
     }
     return true;
