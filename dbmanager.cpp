@@ -69,10 +69,40 @@ bool DBManager::ensureSchema(QString *err)
         "CREATE TABLE IF NOT EXISTS tests ("
         "id TEXT PRIMARY KEY,"
         "name TEXT NOT NULL,"
-        "description TEXT"
+        "description TEXT,"
+        "student_count INTEGER DEFAULT 10"
         ")"
         );
     if (!execOrFail(q, err)) return false;
+
+    // Ensure tests has student_count column (migrate older DBs)
+    {
+        QSqlQuery qi(mDb);
+        if (!qi.exec("PRAGMA table_info(tests)")) {
+            if (err) *err = qi.lastError().text();
+            return false;
+        }
+        bool hasStudentCount = false;
+        while (qi.next()) {
+            QString colName = qi.value(1).toString(); // name is in column index 1
+            if (colName == "student_count") { hasStudentCount = true; break; }
+        }
+        if (!hasStudentCount) {
+            // Add the column
+            QSqlQuery alt(mDb);
+            if (!alt.exec("ALTER TABLE tests ADD COLUMN student_count INTEGER DEFAULT 10")) {
+                if (err) {
+                    QString details = alt.lastError().text();
+                    details += "\nFailed ALTER TABLE tests ADD COLUMN student_count";
+                    *err = details;
+                }
+                qDebug() << "Failed to ALTER TABLE to add student_count:" << alt.lastError().text();
+                return false;
+            } else {
+                qDebug() << "ALTER TABLE tests ADD COLUMN student_count executed (migration)";
+            }
+        }
+    }
 
     // questions table (we'll create without assuming presence of test_id in old DBs)
     q.prepare(
@@ -191,13 +221,14 @@ bool DBManager::loadTests(QVector<Test> &outTests, QString *err)
 {
     outTests.clear();
     QSqlQuery q(mDb);
-    q.prepare("SELECT id, name, description FROM tests ORDER BY rowid");
+    q.prepare("SELECT id, name, description, student_count FROM tests ORDER BY rowid");
     if (!execOrFail(q, err)) return false;
     while (q.next()) {
         Test t;
         t.id = q.value(0).toString();
         t.name = q.value(1).toString();
         t.description = q.value(2).toString();
+        t.studentCount = q.value(3).toInt();
         outTests.append(t);
     }
     return true;
@@ -219,16 +250,18 @@ bool DBManager::addOrUpdateTest(const Test &t, QString *err)
 
     if (!exists) {
         QSqlQuery ins(mDb);
-        ins.prepare("INSERT INTO tests (id, name, description) VALUES (?, ?, ?)");
+        ins.prepare("INSERT INTO tests (id, name, description, student_count) VALUES (?, ?, ?, ?)");
         ins.addBindValue(t.id);
         ins.addBindValue(t.name);
         ins.addBindValue(t.description);
+        ins.addBindValue(t.studentCount);
         if (!execOrFail(ins, err)) { mDb.rollback(); return false; }
     } else {
         QSqlQuery upd(mDb);
-        upd.prepare("UPDATE tests SET name=?, description=? WHERE id=?");
+        upd.prepare("UPDATE tests SET name=?, description=?, student_count=? WHERE id=?");
         upd.addBindValue(t.name);
         upd.addBindValue(t.description);
+        upd.addBindValue(t.studentCount);
         upd.addBindValue(t.id);
         if (!execOrFail(upd, err)) { mDb.rollback(); return false; }
     }
