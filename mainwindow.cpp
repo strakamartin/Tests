@@ -328,6 +328,7 @@ void MainWindow::onRemoveTest()
         mListQuestions->clear();
         mEditTestName->clear();
         mEditTestDescription->clear();
+        mSpinStudentCount->setValue(10);  // reset to default
         mQuestions.clear();
     }
 }
@@ -534,6 +535,7 @@ void MainWindow::onTestSelected(int idx)
         if (idx < 0 || idx >= mTests.size()) {
             mEditTestName->clear();
             mEditTestDescription->clear();
+            mSpinStudentCount->setValue(10);  // reset to default
             mQuestions.clear();
             refreshQuestionList();
             return;
