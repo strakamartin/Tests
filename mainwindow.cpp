@@ -165,6 +165,7 @@ void MainWindow::buildTeacherUi()
         int idx = mListTests->currentRow();
         if (idx < 0 || idx >= mTests.size()) return;
         mTests[idx].name = mEditTestName->text().trimmed();
+        mTests[idx].studentCount = mSpinStudentCount->value();
         QString err;
         DBManager::instance().addOrUpdateTest(mTests[idx], &err);
         refreshTestList();
@@ -174,6 +175,14 @@ void MainWindow::buildTeacherUi()
         int idx = mListTests->currentRow();
         if (idx < 0 || idx >= mTests.size()) return;
         mTests[idx].description = mEditTestDescription->text().trimmed();
+        mTests[idx].studentCount = mSpinStudentCount->value();
+        QString err;
+        DBManager::instance().addOrUpdateTest(mTests[idx], &err);
+    });
+    connect(mSpinStudentCount, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value){
+        int idx = mListTests->currentRow();
+        if (idx < 0 || idx >= mTests.size()) return;
+        mTests[idx].studentCount = value;
         QString err;
         DBManager::instance().addOrUpdateTest(mTests[idx], &err);
     });
@@ -285,6 +294,7 @@ void MainWindow::onAddTest()
     t.id = QUuid::createUuid().toString();
     t.name = "Novy test1";
     t.description = "";
+    t.studentCount = 10;  // default value
     // add to DB immediately
     QString err;
     if (!DBManager::instance().addOrUpdateTest(t, &err)) {
@@ -296,6 +306,7 @@ void MainWindow::onAddTest()
         mListTests->setCurrentRow(idx);
         mEditTestName->setText(t.name);
         mEditTestDescription->setText(t.description);
+        mSpinStudentCount->setValue(t.studentCount);
     }
 }
 
@@ -317,6 +328,7 @@ void MainWindow::onRemoveTest()
         mListQuestions->clear();
         mEditTestName->clear();
         mEditTestDescription->clear();
+        mSpinStudentCount->setValue(10);  // reset to default
         mQuestions.clear();
     }
 }
@@ -523,6 +535,7 @@ void MainWindow::onTestSelected(int idx)
         if (idx < 0 || idx >= mTests.size()) {
             mEditTestName->clear();
             mEditTestDescription->clear();
+            mSpinStudentCount->setValue(10);  // reset to default
             mQuestions.clear();
             refreshQuestionList();
             return;
@@ -530,6 +543,7 @@ void MainWindow::onTestSelected(int idx)
         const Test &t = mTests[idx];
         mEditTestName->setText(t.name);
         mEditTestDescription->setText(t.description);
+        mSpinStudentCount->setValue(t.studentCount);
 
         // load questions for this test from DB
         QString err;
@@ -570,8 +584,7 @@ void MainWindow::onTestSelected(int idx)
     // prepare randomized subset
     std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
 
-    //TODO udelat nacitanie poctu otazke z db.
-    int count = 4;//mSpinStudentCount->value();
+    int count = mTests[idx].studentCount;
     if (mStudentQuestions.size() > count) {
         mStudentQuestions.resize(count);
     }
