@@ -178,6 +178,10 @@ void MainWindow::buildTeacherUi()
         DBManager::instance().addOrUpdateTest(mTests[idx], &err);
     });
 
+//    connect(mSpinStudentCount, SIGNAL(valueChanged(int)), this, SLOT(saveCurrentTestToDb1(int)));
+
+    connect(mSpinStudentCount, &QSpinBox::valueChanged, this, &MainWindow::saveCurrentTestToDb);
+
     connect(mBtnAddQuestion, &QPushButton::clicked, this, &MainWindow::onAddQuestion);
     connect(mBtnRemoveQuestion, &QPushButton::clicked, this, &MainWindow::onRemoveQuestion);
     connect(mListQuestions, &QListWidget::currentRowChanged, this, &MainWindow::onQuestionSelected);
@@ -229,11 +233,9 @@ void MainWindow::buildStudentUi()
     rightLayout->addWidget(mWidgetStudentAnswers);
     QHBoxLayout *btns = new QHBoxLayout;
     btns->addWidget(mBtnStudentNext);
-  //  btns->addWidget(mBtnStudentSubmit);
     rightLayout->addStretch(1);
     rightLayout->addLayout(btns);
     rightLayout->addWidget(mBtnStudentSubmit);
-
 
     QWidget *rightWidget = new QWidget; rightWidget->setLayout(rightLayout);
 
@@ -531,6 +533,13 @@ void MainWindow::onTestSelected(int idx)
         mEditTestName->setText(t.name);
         mEditTestDescription->setText(t.description);
 
+        if (t.studentCount >= mSpinStudentCount->minimum() && t.studentCount <= mSpinStudentCount->maximum()) {
+            mSpinStudentCount->setValue(t.studentCount);
+        } else {
+            // pokud v databázi nějaká nesmyslná hodnota, použijeme default (10)
+            mSpinStudentCount->setValue(10);
+        }
+
         // load questions for this test from DB
         QString err;
         QVector<Question> loadedQuestions;
@@ -570,8 +579,8 @@ void MainWindow::onTestSelected(int idx)
     // prepare randomized subset
     std::shuffle(mStudentQuestions.begin(), mStudentQuestions.end(), *QRandomGenerator::global());
 
-    //TODO udelat nacitanie poctu otazke z db.
-    int count = 4;//mSpinStudentCount->value();
+    int count = mTests[idx].studentCount;
+
     if (mStudentQuestions.size() > count) {
         mStudentQuestions.resize(count);
     }
@@ -772,5 +781,44 @@ void MainWindow::onStudentStartTest()
         if (idx >= 0) {
             onTestSelected(idx); // will load and show first question
         }
+    }
+}
+
+void MainWindow::saveCurrentTestToDb1(int i)
+{
+    int idx = currentTestIndex();
+    if (idx < 0 || idx >= mTests.size()) return;
+
+    Test &t = mTests[idx];
+    t.name = mEditTestName->text();
+    t.description = mEditTestDescription->text();
+    t.studentCount = mSpinStudentCount->value(); // nově: bereme hodnotu ze spinboxu
+
+    QString err;
+    if (!DBManager::instance().addOrUpdateTest(t, &err)) {
+        qDebug() << "Chyba při ukládání testu:" << err;
+        // případně zobrazit uživateli
+    } else {
+        refreshTestList(); // nebo jiná aktualizace UI pokud je potřeba
+    }
+}
+
+void MainWindow::saveCurrentTestToDb()
+{
+    int idx = currentTestIndex();
+    if (idx < 0 || idx >= mTests.size()) return;
+
+    Test &t = mTests[idx];
+    t.name = mEditTestName->text();
+    t.description = mEditTestDescription->text();
+    t.studentCount = mSpinStudentCount->value(); // nově: bereme hodnotu ze spinboxu
+
+    QString err;
+    if (!DBManager::instance().addOrUpdateTest(t, &err)) {
+        qDebug() << "Chyba při ukládání testu:" << err;
+        // případně zobrazit uživateli
+    } else {
+        refreshTestList(); // nebo jiná aktualizace UI pokud je potřeba
+        refreshQuestionList();
     }
 }

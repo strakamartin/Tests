@@ -68,11 +68,31 @@ bool DBManager::ensureSchema(QString *err)
     q.prepare(
         "CREATE TABLE IF NOT EXISTS tests ("
         "id TEXT PRIMARY KEY,"
-        "name TEXT NOT NULL,"
-        "description TEXT"
+        "name TEXT,"
+        "description TEXT,"
+        "student_count INTEGER DEFAULT 10"
         ")"
         );
     if (!execOrFail(q, err)) return false;
+
+    // migrace pro starší databáze: pokud chybí student_count, přidat sloupec
+    QSqlQuery pragma(mDb);
+    pragma.prepare("PRAGMA table_info(tests)");
+    if (!execOrFail(pragma, err)) return false;
+    bool hasStudentCount = false;
+    while (pragma.next()) {
+        QString colName = pragma.value(1).toString();
+        if (colName == "student_count") { hasStudentCount = true; break; }
+    }
+    if (!hasStudentCount) {
+        QSqlQuery alt(mDb);
+        if (!alt.exec("ALTER TABLE tests ADD COLUMN student_count INTEGER DEFAULT 10")) {
+            if (err) *err = alt.lastError().text();
+            return false;
+        } else {
+            qDebug() << "ALTER TABLE tests ADD COLUMN student_count executed (migration)";
+        }
+    }
 
     // questions table (we'll create without assuming presence of test_id in old DBs)
     q.prepare(
@@ -191,13 +211,15 @@ bool DBManager::loadTests(QVector<Test> &outTests, QString *err)
 {
     outTests.clear();
     QSqlQuery q(mDb);
-    q.prepare("SELECT id, name, description FROM tests ORDER BY rowid");
+    // načteme student_count (pokud sloupec existuje, pak bude vrácen; migrace zajišťuje, že existuje)
+    q.prepare("SELECT id, name, description, student_count FROM tests ORDER BY rowid");
     if (!execOrFail(q, err)) return false;
     while (q.next()) {
         Test t;
         t.id = q.value(0).toString();
         t.name = q.value(1).toString();
         t.description = q.value(2).toString();
+        t.studentCount = q.value(3).toInt();
         outTests.append(t);
     }
     return true;
@@ -219,16 +241,18 @@ bool DBManager::addOrUpdateTest(const Test &t, QString *err)
 
     if (!exists) {
         QSqlQuery ins(mDb);
-        ins.prepare("INSERT INTO tests (id, name, description) VALUES (?, ?, ?)");
+        ins.prepare("INSERT INTO tests (id, name, description, student_count) VALUES (?, ?, ?, ?)");
         ins.addBindValue(t.id);
         ins.addBindValue(t.name);
         ins.addBindValue(t.description);
+        ins.addBindValue(t.studentCount);
         if (!execOrFail(ins, err)) { mDb.rollback(); return false; }
     } else {
         QSqlQuery upd(mDb);
-        upd.prepare("UPDATE tests SET name=?, description=? WHERE id=?");
+        upd.prepare("UPDATE tests SET name=?, description=?, student_count=? WHERE id=?");
         upd.addBindValue(t.name);
         upd.addBindValue(t.description);
+        upd.addBindValue(t.studentCount);
         upd.addBindValue(t.id);
         if (!execOrFail(upd, err)) { mDb.rollback(); return false; }
     }

@@ -50,6 +50,9 @@ private slots:
     void onStudentNext();
     void onStudentSubmit();
 
+    void saveCurrentTestToDb();
+    void saveCurrentTestToDb1(int i);
+
 private:
     void buildTeacherUi();
     void buildStudentUi();

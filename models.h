@@ -9,6 +9,7 @@ struct Test {
     QString id;
     QString name;
     QString description;
+    int studentCount = 4;
 };
 
 // Question types
